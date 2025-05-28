@@ -24,17 +24,17 @@
 
 5. **🎨 Vizuális Állapotok**
    - **Off**: Normál állapot
-   - **On**: Aktív állapot (zöld LED csík)
+   - **On**: Aktív állapot (zöld LED csík toggleable gomboknál)
    - **Disabled**: Letiltott állapot
    - **CurrentActive**: Jelenleg aktív mód jelzése (kék keret)
    - **Pressed**: Gradiens nyomás effekt
    - **LongPressed**: Hosszú nyomás detektálás
 
 6. **💡 LED Csík Indikátor**
-   - Alul színes csík az állapot jelzésére
-   - Zöld: On állapot
-   - Narancs: Pressed állapot
-   - Sötétzöld: Toggleable Off állapot
+   - **Csak toggleable gomboknál** jelenik meg alul
+   - 🟢 **On állapot**: Zöld LED
+   - 🔹 **Off állapot**: Sötétzöld LED
+   - **Pushable gombok**: Nincs LED csík (tisztább megjelenés)
 
 7. **🎭 Gradiens Effektek**
    - Smooth pressed animáció
@@ -65,7 +65,7 @@ muteButton->setEventCallback([this](const Button::ButtonEvent& event) {
 **Funkcionalitás:**
 - **Rövid nyomás**: Mute On/Off váltás
 - **Hosszú nyomás**: Audio reset funkció
-- **Vizuális**: LED csík mutatja az állapotot
+- **Vizuális**: LED csík mutatja az állapotot (zöld/sötétzöld)
 - **Szöveg**: "MUTE" ↔ "UNMUTE" dinamikus váltás
 
 ### **MENU Gomb** (ID: 2, Pushable)
@@ -80,7 +80,7 @@ menuButton->setEventCallback([this](const Button::ButtonEvent& event) {
 **Funkcionalitás:**
 - **Rövid nyomás**: Menü képernyőre váltás
 - **Hosszú nyomás**: Direkt beállítások képernyő
-- **Vizuális**: Pressed gradiens effekt
+- **Vizuális**: Pressed gradiens effekt (nincs LED csík)
 - **Szöveg**: Konstans "MENU" felirat
 
 ## 🎨 **Vizuális Jellemzők**
@@ -93,7 +93,10 @@ menuButton->setEventCallback([this](const Button::ButtonEvent& event) {
   - Zöld: On állapot  
   - Kék: CurrentActive állapot
   - Narancs: Pressed állapot
-- **LED csík**: Állapot-specifikus színek
+- **LED csík**: Csak toggleable gomboknál jelenik meg
+  - 🟢 **ON állapot**: Zöld LED
+  - 🔹 **OFF állapot**: Sötétzöld LED
+  - **Pushable gombok**: Nincs LED csík
 
 ### **Geometria:**
 - **Lekerekített sarkok**: 8px radius
