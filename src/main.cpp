@@ -22,6 +22,14 @@ RotaryEncoder rotaryEncoder = RotaryEncoder(PIN_ENCODER_CLK, PIN_ENCODER_DT, PIN
 #include "StationStore.h"
 #include "StoreEepromBase.h"
 
+// Képernyőkezelő rendszer
+#include "InfoScreen.h"
+#include "MainScreen.h"
+#include "MenuScreen.h"
+#include "ScreenManager.h"
+#include "UIComponents.h"
+#include "VolumeScreen.h"
+
 // Globális példányok példa használatra (valós projektben ezek már deklarálva vannak)
 extern Config config;
 extern FmStationStore fmStationStore;
@@ -34,6 +42,9 @@ extern AmStationStore amStationStore;
 
 //------------------- Képernyők
 #include "SplashScreen.h"
+
+// Globális képernyőkezelő
+ScreenManager screenManager(tft);
 
 /**
  * @brief  Hardware timer interrupt service routine a rotaryhoz
@@ -201,21 +212,50 @@ void setup() {
     delay(300);
 
     // Splash screen eltűntetése
-    splash.hide();
-
-    // PICO AD inicializálása
+    splash.hide(); // PICO AD inicializálása
     PicoSensorUtils::init();
+
+    // Képernyőkezelő már inicializálva van (factory-k regisztrálva)
+    // Nincs szükség képernyő példányok létrehozására    // Főképernyő aktiválása kezdő paraméterekkel
+    MainScreenParams params;
+    params.frequency = 88500; // 88.5 MHz
+    params.showFrequency = true;
+    params.stationName = "Radio One";
+    screenManager.switchToScreen("MainScreen", &params);
 
     // Csippantunk egyet
     Utils::beepTick();
 
-    delay(3000);
+    delay(1000); // Rövidebb delay
 }
 
 /**
  * @brief Core0 fő ciklusa.
  */
 void loop() {
+
+    //------------------- Touch esemény kezelése
+    uint16_t touchX, touchY;
+    bool touched = tft.getTouch(&touchX, &touchY);
+    static bool lastTouchState = false;
+    static uint16_t lastTouchX = 0, lastTouchY = 0; // Touch press esemény
+    if (touched && !lastTouchState) {
+        DEBUG("Touch PRESS at (%d,%d)\n", touchX, touchY);
+        TouchEvent touchEvent(touchX, touchY, true);
+        bool handled = screenManager.handleTouch(touchEvent);
+        DEBUG("Touch PRESS handled: %s\n", handled ? "YES" : "NO");
+        lastTouchX = touchX;
+        lastTouchY = touchY;
+    }
+    // Touch release esemény
+    else if (!touched && lastTouchState) {
+        DEBUG("Touch RELEASE at (%d,%d)\n", lastTouchX, lastTouchY);
+        TouchEvent touchEvent(lastTouchX, lastTouchY, false);
+        bool handled = screenManager.handleTouch(touchEvent);
+        DEBUG("Touch RELEASE handled: %s\n", handled ? "YES" : "NO");
+    }
+
+    lastTouchState = touched;
 
 //------------------- EEPROM mentés figyelése
 #define EEPROM_SAVE_CHECK_INTERVAL 1000 * 60 * 5 // 5 perc
@@ -233,10 +273,90 @@ void loop() {
         debugMemoryInfo();
         lasDebugMemoryInfo = millis();
     }
-#endif
-
-    // Rotary Encoder olvasása
+#endif // Rotary Encoder olvasása és kezelése
     RotaryEncoder::EncoderState encoderState = rotaryEncoder.read();
+
+    // Rotary encoder eseményeinek továbbítása a képernyőkezelőnek
+    if (encoderState.direction != RotaryEncoder::Direction::None) {
+        auto currentScreen = screenManager.getCurrentScreen();
+        if (currentScreen && currentScreen->getName() == "MainScreen") {
+            // Főképernyőn: frekvencia állítás
+            auto mainScreenPtr = std::static_pointer_cast<MainScreen>(currentScreen);
+            if (mainScreenPtr) {
+                if (encoderState.direction == RotaryEncoder::Direction::Up) {
+                    mainScreenPtr->adjustFrequency(true); // Frekvencia növelés
+                } else if (encoderState.direction == RotaryEncoder::Direction::Down) {
+                    mainScreenPtr->adjustFrequency(false); // Frekvencia csökkentés
+                }
+            }
+        } else if (currentScreen && currentScreen->getName() == "MenuScreen") {
+            // Menüben: navigáció
+            auto menuScreenPtr = std::static_pointer_cast<MenuScreen>(currentScreen);
+            if (menuScreenPtr) {
+                if (encoderState.direction == RotaryEncoder::Direction::Down) {
+                    menuScreenPtr->navigateDown();
+                } else if (encoderState.direction == RotaryEncoder::Direction::Up) {
+                    menuScreenPtr->navigateUp();
+                }
+            }
+        } else if (currentScreen && currentScreen->getName() == "VolumeScreen") {
+            // Volume képernyőn: hangerő állítás
+            auto volumeScreenPtr = std::static_pointer_cast<VolumeScreen>(currentScreen);
+            if (volumeScreenPtr) {
+                if (encoderState.direction == RotaryEncoder::Direction::Up) {
+                    int currentVol = volumeScreenPtr->getVolume();
+                    DEBUG("Rotary UP: Volume %d -> %d\n", currentVol, currentVol + 5);
+                    volumeScreenPtr->setVolume(currentVol + 5);
+                } else if (encoderState.direction == RotaryEncoder::Direction::Down) {
+                    int currentVol = volumeScreenPtr->getVolume();
+                    DEBUG("Rotary DOWN: Volume %d -> %d\n", currentVol, currentVol - 5);
+                    volumeScreenPtr->setVolume(currentVol - 5);
+                }
+            }
+        }
+    }
+
+    // Gomb lenyomás kezelése
+    if (encoderState.buttonState == RotaryEncoder::ButtonState::Clicked) {
+        auto currentScreen = screenManager.getCurrentScreen();
+        if (currentScreen && currentScreen->getName() == "MenuScreen") {
+            // Menüben: kiválasztott elem aktiválása
+            auto menuScreenPtr = std::static_pointer_cast<MenuScreen>(currentScreen);
+            if (menuScreenPtr) {
+                menuScreenPtr->activateSelected();
+            }
+        } else if (currentScreen && currentScreen->getName() == "MainScreen") {
+            // Főképernyőn: mute váltás
+            auto mainScreenPtr = std::static_pointer_cast<MainScreen>(currentScreen);
+            if (mainScreenPtr) {
+                mainScreenPtr->toggleMute();
+            }
+        } else if (currentScreen && currentScreen->getName() == "VolumeScreen") {
+            // Volume képernyőn: mute váltás
+            auto volumeScreenPtr = std::static_pointer_cast<VolumeScreen>(currentScreen);
+            if (volumeScreenPtr) {
+                bool currentMute = volumeScreenPtr->getMuted();
+                DEBUG("Rotary CLICK: Mute %s -> %s\n", currentMute ? "ON" : "OFF", !currentMute ? "ON" : "OFF");
+                volumeScreenPtr->setMuted(!currentMute);
+            }
+        }
+    }
+
+    if (encoderState.buttonState == RotaryEncoder::ButtonState::DoubleClicked) {
+        // Dupla kattintás kezelése
+    }
+
+    // Képernyőkezelő loop hívása
+    screenManager.loop();
+
+    // Képernyő rajzolása (csak szükség esetén, korlátozott gyakorisággal)
+    static uint32_t lastDrawTime = 0;
+    const uint32_t DRAW_INTERVAL = 50; // Maximum 20 FPS (50ms között rajzolás)
+
+    if (millis() - lastDrawTime >= DRAW_INTERVAL) {
+        screenManager.draw();
+        lastDrawTime = millis();
+    }
 }
 
 /**
