@@ -276,75 +276,30 @@ void loop() {
 #endif // Rotary Encoder olvasása és kezelése
     RotaryEncoder::EncoderState encoderState = rotaryEncoder.read();
 
-    // Rotary encoder eseményeinek továbbítása a képernyőkezelőnek
-    if (encoderState.direction != RotaryEncoder::Direction::None) {
-        auto currentScreen = screenManager.getCurrentScreen();
-        if (currentScreen && currentScreen->getName() == "MainScreen") {
-            // Főképernyőn: frekvencia állítás
-            auto mainScreenPtr = std::static_pointer_cast<MainScreen>(currentScreen);
-            if (mainScreenPtr) {
-                if (encoderState.direction == RotaryEncoder::Direction::Up) {
-                    mainScreenPtr->adjustFrequency(true); // Frekvencia növelés
-                } else if (encoderState.direction == RotaryEncoder::Direction::Down) {
-                    mainScreenPtr->adjustFrequency(false); // Frekvencia csökkentés
-                }
-            }
-        } else if (currentScreen && currentScreen->getName() == "MenuScreen") {
-            // Menüben: navigáció
-            auto menuScreenPtr = std::static_pointer_cast<MenuScreen>(currentScreen);
-            if (menuScreenPtr) {
-                if (encoderState.direction == RotaryEncoder::Direction::Down) {
-                    menuScreenPtr->navigateDown();
-                } else if (encoderState.direction == RotaryEncoder::Direction::Up) {
-                    menuScreenPtr->navigateUp();
-                }
-            }
-        } else if (currentScreen && currentScreen->getName() == "VolumeScreen") {
-            // Volume képernyőn: hangerő állítás
-            auto volumeScreenPtr = std::static_pointer_cast<VolumeScreen>(currentScreen);
-            if (volumeScreenPtr) {
-                if (encoderState.direction == RotaryEncoder::Direction::Up) {
-                    int currentVol = volumeScreenPtr->getVolume();
-                    DEBUG("Rotary UP: Volume %d -> %d\n", currentVol, currentVol + 5);
-                    volumeScreenPtr->setVolume(currentVol + 5);
-                } else if (encoderState.direction == RotaryEncoder::Direction::Down) {
-                    int currentVol = volumeScreenPtr->getVolume();
-                    DEBUG("Rotary DOWN: Volume %d -> %d\n", currentVol, currentVol - 5);
-                    volumeScreenPtr->setVolume(currentVol - 5);
-                }
-            }
+    // Rotary encoder eseményeinek továbbítása a ScreenManager-nek
+    if (encoderState.direction != RotaryEncoder::Direction::None || encoderState.buttonState != RotaryEncoder::ButtonState::Open) {
+
+        // RotaryEvent létrehozása a ScreenManager típusaival
+        RotaryEvent::Direction direction = RotaryEvent::Direction::None;
+        if (encoderState.direction == RotaryEncoder::Direction::Up) {
+            direction = RotaryEvent::Direction::Up;
+        } else if (encoderState.direction == RotaryEncoder::Direction::Down) {
+            direction = RotaryEvent::Direction::Down;
         }
+
+        RotaryEvent::ButtonState buttonState = RotaryEvent::ButtonState::NotPressed;
+        if (encoderState.buttonState == RotaryEncoder::ButtonState::Clicked) {
+            buttonState = RotaryEvent::ButtonState::Clicked;
+        } else if (encoderState.buttonState == RotaryEncoder::ButtonState::DoubleClicked) {
+            buttonState = RotaryEvent::ButtonState::DoubleClicked;
+        } // Esemény továbbítása a ScreenManager-nek
+        RotaryEvent rotaryEvent(direction, buttonState);
+        bool handled = screenManager.handleRotary(rotaryEvent);
+        DEBUG("Rotary event handled by screen: %s\n", handled ? "YES" : "NO");
     }
 
-    // Gomb lenyomás kezelése
-    if (encoderState.buttonState == RotaryEncoder::ButtonState::Clicked) {
-        auto currentScreen = screenManager.getCurrentScreen();
-        if (currentScreen && currentScreen->getName() == "MenuScreen") {
-            // Menüben: kiválasztott elem aktiválása
-            auto menuScreenPtr = std::static_pointer_cast<MenuScreen>(currentScreen);
-            if (menuScreenPtr) {
-                menuScreenPtr->activateSelected();
-            }
-        } else if (currentScreen && currentScreen->getName() == "MainScreen") {
-            // Főképernyőn: mute váltás
-            auto mainScreenPtr = std::static_pointer_cast<MainScreen>(currentScreen);
-            if (mainScreenPtr) {
-                mainScreenPtr->toggleMute();
-            }
-        } else if (currentScreen && currentScreen->getName() == "VolumeScreen") {
-            // Volume képernyőn: mute váltás
-            auto volumeScreenPtr = std::static_pointer_cast<VolumeScreen>(currentScreen);
-            if (volumeScreenPtr) {
-                bool currentMute = volumeScreenPtr->getMuted();
-                DEBUG("Rotary CLICK: Mute %s -> %s\n", currentMute ? "ON" : "OFF", !currentMute ? "ON" : "OFF");
-                volumeScreenPtr->setMuted(!currentMute);
-            }
-        }
-    }
-
-    if (encoderState.buttonState == RotaryEncoder::ButtonState::DoubleClicked) {
-        // Dupla kattintás kezelése
-    }
+    // Deferred actions feldolgozása - biztonságos képernyőváltások végrehajtása
+    screenManager.processDeferredActions();
 
     // Képernyőkezelő loop hívása
     screenManager.loop();

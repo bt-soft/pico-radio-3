@@ -39,6 +39,29 @@ class MainScreen : public Screen {
         layoutComponents();
     }
 
+    // Rotary encoder eseménykezelés felülírása
+    virtual bool handleRotary(const RotaryEvent &event) override {
+        DEBUG("MainScreen handleRotary: direction=%d, button=%d\n", (int)event.direction, (int)event.buttonState);
+
+        // Frekvencia állítás forgatással
+        if (event.direction == RotaryEvent::Direction::Up) {
+            adjustFrequency(true);
+            return true;
+        } else if (event.direction == RotaryEvent::Direction::Down) {
+            adjustFrequency(false);
+            return true;
+        }
+
+        // Mute váltás kattintással
+        if (event.buttonState == RotaryEvent::ButtonState::Clicked) {
+            toggleMute();
+            return true;
+        }
+
+        // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
+        return Screen::handleRotary(event);
+    }
+
     // Rotary encoder támogatás
     void adjustFrequency(bool increase) {
         // Frekvencia lépés (például 100 kHz FM-ben, 10 kHz AM-ben)

@@ -31,7 +31,38 @@ class VolumeScreen : public Screen {
   public:
     VolumeScreen(TFT_eSPI &tft) : Screen(tft, "VolumeScreen") { createComponents(); }
 
-    virtual ~VolumeScreen() = default; // Volume értékek getter/setter
+    virtual ~VolumeScreen() = default;
+
+    // Rotary encoder eseménykezelés felülírása
+    virtual bool handleRotary(const RotaryEvent &event) override {
+        DEBUG("VolumeScreen handleRotary: direction=%d, button=%d\n", (int)event.direction, (int)event.buttonState);
+
+        // Hangerő állítás forgatással
+        if (event.direction == RotaryEvent::Direction::Up) {
+            int newVolume = currentVolume + 5;
+            DEBUG("Rotary UP: Volume %d -> %d\n", currentVolume, newVolume);
+            setVolume(newVolume);
+            return true;
+        } else if (event.direction == RotaryEvent::Direction::Down) {
+            int newVolume = currentVolume - 5;
+            DEBUG("Rotary DOWN: Volume %d -> %d\n", currentVolume, newVolume);
+            setVolume(newVolume);
+            return true;
+        }
+
+        // Mute váltás kattintással
+        if (event.buttonState == RotaryEvent::ButtonState::Clicked) {
+            bool newMute = !isMuted;
+            DEBUG("Rotary CLICK: Mute %s -> %s\n", isMuted ? "ON" : "OFF", newMute ? "ON" : "OFF");
+            setMuted(newMute);
+            return true;
+        }
+
+        // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
+        return Screen::handleRotary(event);
+    }
+
+    // Volume értékek getter/setter
     void setVolume(int volume) {
         int newVolume = constrain(volume, minVolume, maxVolume);
         DEBUG("VolumeScreen setVolume: %d -> %d (constrained)\n", currentVolume, newVolume);

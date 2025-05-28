@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <queue>
 #include <vector>
 
 #include "defines.h"
@@ -23,6 +24,29 @@ struct TouchEvent {
     TouchEvent(uint16_t x, uint16_t y, bool pressed) : x(x), y(y), pressed(pressed), timestamp(millis()) {}
 };
 
+// Rotary encoder esemény struktúra
+struct RotaryEvent {
+    enum Direction { None, Up, Down };
+    enum ButtonState { NotPressed, Clicked, DoubleClicked };
+
+    Direction direction;
+    ButtonState buttonState;
+    uint32_t timestamp;
+
+    RotaryEvent(Direction dir, ButtonState btnState) : direction(dir), buttonState(btnState), timestamp(millis()) {}
+};
+
+// Deferred action struktúra - biztonságos képernyőváltáshoz
+struct DeferredAction {
+    enum Type { SwitchScreen, GoBack };
+
+    Type type;
+    String screenName;
+    void *params;
+
+    DeferredAction(Type t, const String &name = "", void *p = nullptr) : type(t), screenName(name), params(p) {}
+};
+
 // Alap komponens interface
 class Component {
   public:
@@ -30,6 +54,9 @@ class Component {
 
     // Touch esemény kezelése - visszatérés: true ha feldolgozta az eseményt
     virtual bool handleTouch(const TouchEvent &event) = 0;
+
+    // Rotary encoder esemény kezelése - visszatérés: true ha feldolgozta az eseményt
+    virtual bool handleRotary(const RotaryEvent &event) { return false; }
 
     // Loop hívás - ezt minden komponens megkapja
     virtual void loop() = 0;
@@ -89,6 +116,31 @@ class CompositeComponent : public Component {
         return false; // Senki sem kezelte
     }
 
+    // Rotary encoder esemény továbbítása gyerekeknek (csak ha nem kezeltük le)
+    virtual bool handleRotary(const RotaryEvent &event) override {
+        if (!isActive)
+            return false;
+
+        DEBUG("CompositeComponent handleRotary: direction=%d, button=%d, children=%d\n", (int)event.direction, (int)event.buttonState, children.size());
+
+        // Először magunk próbáljuk kezelni
+        if (handleOwnRotary(event)) {
+            DEBUG("CompositeComponent: rotary handled by self\n");
+            return true; // Feldolgoztuk, nem adjuk tovább
+        }
+
+        // Ha nem kezeltük, továbbítjuk a gyerekeknek (visszafelé, hogy a felső rétegek elsőbbséget kapjanak)
+        for (auto it = children.rbegin(); it != children.rend(); ++it) {
+            if ((*it)->getActive() && (*it)->handleRotary(event)) {
+                DEBUG("CompositeComponent: rotary handled by child\n");
+                return true; // Egy gyerek feldolgozta
+            }
+        }
+
+        DEBUG("CompositeComponent: rotary not handled\n");
+        return false; // Senki sem kezelte
+    }
+
     // Loop hívás továbbítása minden gyereknek
     virtual void loop() override {
         if (!isActive)
@@ -132,6 +184,7 @@ class CompositeComponent : public Component {
   protected:
     // Ezeket a leszármazott osztályok implementálják
     virtual bool handleOwnTouch(const TouchEvent &event) { return false; }
+    virtual bool handleOwnRotary(const RotaryEvent &event) { return false; }
     virtual void handleOwnLoop() {}
     virtual void drawSelf() {}
 };
@@ -219,17 +272,58 @@ class ScreenManager {
     std::shared_ptr<Screen> currentScreen;
     String previousScreenName;
 
+    // Deferred action queue - biztonságos képernyőváltáshoz
+    std::queue<DeferredAction> deferredActions;
+    bool processingEvents = false;
+
   public:
     ScreenManager(TFT_eSPI &tft) : tft(tft) {
         // Beépített screen factory-k regisztrálása
         registerDefaultScreenFactories();
-    }
-
-    // Képernyő factory regisztrálása
+    } // Képernyő factory regisztrálása
     void registerScreenFactory(const String &screenName, ScreenFactory factory) { screenFactories[screenName] = factory; }
 
-    // Képernyő váltás név alapján
+    // Deferred képernyő váltás - biztonságos váltás eseménykezelés közben
+    void deferSwitchToScreen(const String &screenName, void *params = nullptr) {
+        DEBUG("ScreenManager: Deferring switch to screen '%s'\n", screenName.c_str());
+        deferredActions.push(DeferredAction(DeferredAction::SwitchScreen, screenName, params));
+    }
+
+    // Deferred vissza váltás
+    void deferGoBack() {
+        DEBUG("ScreenManager: Deferring go back\n");
+        deferredActions.push(DeferredAction(DeferredAction::GoBack));
+    }
+
+    // Deferred actions feldolgozása - a main loop-ban hívandó
+    void processDeferredActions() {
+        while (!deferredActions.empty()) {
+            const DeferredAction &action = deferredActions.front();
+
+            DEBUG("ScreenManager: Processing deferred action type=%d\n", (int)action.type);
+
+            if (action.type == DeferredAction::SwitchScreen) {
+                immediateSwitch(action.screenName, action.params);
+            } else if (action.type == DeferredAction::GoBack) {
+                immediateGoBack();
+            }
+
+            deferredActions.pop();
+        }
+    } // Képernyő váltás név alapján - biztonságos verzió
     bool switchToScreen(const String &screenName, void *params = nullptr) {
+        if (processingEvents) {
+            // Eseménykezelés közben - halasztott váltás
+            deferSwitchToScreen(screenName, params);
+            return true;
+        } else {
+            // Biztonságos - azonnali váltás
+            return immediateSwitch(screenName, params);
+        }
+    }
+
+    // Azonnali képernyő váltás - csak biztonságos kontextusban hívható
+    bool immediateSwitch(const String &screenName, void *params = nullptr) {
         // Ha már ez a képernyő aktív, nem csinálunk semmit
         if (currentScreen && currentScreen->getName() == screenName) {
             return true;
@@ -261,20 +355,45 @@ class ScreenManager {
         } else {
             DEBUG("ScreenManager: Failed to create screen '%s'\n", screenName.c_str());
         }
-
         return false;
-    } // Vissza az előző képernyőre
+    }
+
+    // Vissza az előző képernyőre - biztonságos verzió
     bool goBack() {
+        if (processingEvents) {
+            // Eseménykezelés közben - halasztott váltás
+            deferGoBack();
+            return true;
+        } else {
+            // Biztonságos - azonnali váltás
+            return immediateGoBack();
+        }
+    }
+
+    // Azonnali visszaváltás - csak biztonságos kontextusban hívható
+    bool immediateGoBack() {
         if (!previousScreenName.isEmpty()) {
-            return switchToScreen(previousScreenName);
+            return immediateSwitch(previousScreenName);
+        }
+        return false;
+    } // Touch esemény kezelése
+    bool handleTouch(const TouchEvent &event) {
+        if (currentScreen && currentScreen->getActive()) {
+            processingEvents = true;
+            bool result = currentScreen->handleTouch(event);
+            processingEvents = false;
+            return result;
         }
         return false;
     }
 
-    // Touch esemény kezelése
-    bool handleTouch(const TouchEvent &event) {
+    // Rotary encoder esemény kezelése
+    bool handleRotary(const RotaryEvent &event) {
         if (currentScreen && currentScreen->getActive()) {
-            return currentScreen->handleTouch(event);
+            processingEvents = true;
+            bool result = currentScreen->handleRotary(event);
+            processingEvents = false;
+            return result;
         }
         return false;
     }

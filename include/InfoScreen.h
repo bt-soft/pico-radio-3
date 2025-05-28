@@ -28,6 +28,22 @@ class InfoScreen : public Screen {
 
     virtual ~InfoScreen() = default;
 
+    // Rotary encoder eseménykezelés felülírása
+    virtual bool handleRotary(const RotaryEvent &event) override {
+        DEBUG("InfoScreen handleRotary: direction=%d, button=%d\n", (int)event.direction, (int)event.buttonState);
+
+        // Vissza gombra kattintással vagy dupla kattintással
+        if (event.buttonState == RotaryEvent::ButtonState::Clicked || event.buttonState == RotaryEvent::ButtonState::DoubleClicked) {
+            if (screenManager) {
+                screenManager->goBack();
+            }
+            return true;
+        }
+
+        // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
+        return Screen::handleRotary(event);
+    }
+
   protected:
     void createComponents() {
         // Színsémák

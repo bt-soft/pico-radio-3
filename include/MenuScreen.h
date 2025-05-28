@@ -48,23 +48,48 @@ class MenuScreen : public Screen {
     }
     virtual ~MenuScreen() = default;
 
-    // Rotary encoder támogatás
+    // Rotary encoder eseménykezelés felülírása
+    virtual bool handleRotary(const RotaryEvent &event) override {
+        DEBUG("MenuScreen handleRotary: direction=%d, button=%d\n", (int)event.direction, (int)event.buttonState);
+
+        // Navigáció forgatással
+        if (event.direction == RotaryEvent::Direction::Down) {
+            navigateDown();
+            return true;
+        } else if (event.direction == RotaryEvent::Direction::Up) {
+            navigateUp();
+            return true;
+        }
+
+        // Kiválasztott elem aktiválása kattintással
+        if (event.buttonState == RotaryEvent::ButtonState::Clicked) {
+            activateSelected();
+            return true;
+        }
+
+        // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
+        return Screen::handleRotary(event);
+    } // Rotary encoder támogatás
     void navigateUp() {
         if (selectedIndex > 0) {
+            int oldIndex = selectedIndex;
             selectedIndex--;
-            updateMenuButtons();
+            updateSelectionColors(oldIndex, selectedIndex);
         }
     }
 
     void navigateDown() {
         if (selectedIndex < (int)menuItems.size() - 1) {
+            int oldIndex = selectedIndex;
             selectedIndex++;
-            updateMenuButtons();
+            updateSelectionColors(oldIndex, selectedIndex);
         }
     }
 
     void activateSelected() {
         if (selectedIndex >= 0 && selectedIndex < (int)menuItems.size()) {
+            // Vizuális visszajelzés: gomb "megnyomása" rövid időre
+            simulateButtonPress(selectedIndex);
             onMenuItemClicked(selectedIndex);
         }
     }
@@ -119,7 +144,6 @@ class MenuScreen : public Screen {
         addMenuItem(MenuItem("Information", MenuItemType::ACTION, [this]() { onInformation(); }));
         addMenuItem(MenuItem("Back", MenuItemType::BACK, [this]() { onBack(); }));
     }
-
     void updateMenuButtons() {
         // Töröljük a régi gombokat
         for (auto &button : menuButtons) {
@@ -143,50 +167,154 @@ class MenuScreen : public Screen {
             menuButtons.push_back(button);
             menuPanel->addChild(button);
         }
+    } // Optimalizált kiválasztás frissítés - csak a változott gombokat rajzolja újra
+    void updateSelectionColors(int oldIndex, int newIndex) {
+        // Scroll kezelése
+        updateScrollIfNeeded(newIndex);
+
+        // Ha mindkét index látható, csak azokat frissítjük
+        int startVisible = scrollOffset;
+        int endVisible = scrollOffset + VISIBLE_ITEMS - 1;
+
+        // Régi kiválasztott gomb frissítése
+        if (oldIndex >= startVisible && oldIndex <= endVisible && oldIndex >= 0) {
+            int buttonIndex = oldIndex - scrollOffset;
+            if (buttonIndex >= 0 && buttonIndex < menuButtons.size()) {
+                ColorScheme oldColors = getButtonColors(oldIndex);
+                menuButtons[buttonIndex]->setColorScheme(oldColors);
+                menuButtons[buttonIndex]->markForRedraw();
+            }
+        }
+
+        // Új kiválasztott gomb frissítése
+        if (newIndex >= startVisible && newIndex <= endVisible) {
+            int buttonIndex = newIndex - scrollOffset;
+            if (buttonIndex >= 0 && buttonIndex < menuButtons.size()) {
+                ColorScheme newColors = getButtonColors(newIndex);
+                menuButtons[buttonIndex]->setColorScheme(newColors);
+                menuButtons[buttonIndex]->markForRedraw();
+            }
+        }
     }
 
+    // Scroll pozíció frissítése, ha szükséges
+    void updateScrollIfNeeded(int selectedIndex) {
+        int maxOffset = std::max(0, (int)menuItems.size() - VISIBLE_ITEMS);
+        int oldScrollOffset = scrollOffset;
+
+        // Ha a kiválasztott elem a látható terület felett van
+        if (selectedIndex < scrollOffset) {
+            scrollOffset = selectedIndex;
+        }
+        // Ha a kiválasztott elem a látható terület alatt van
+        else if (selectedIndex >= scrollOffset + VISIBLE_ITEMS) {
+            scrollOffset = selectedIndex - VISIBLE_ITEMS + 1;
+        }
+
+        // Limitálás
+        scrollOffset = std::max(0, std::min(scrollOffset, maxOffset));
+
+        // Ha változott a scroll pozíció, újra kell építeni a menüt
+        if (oldScrollOffset != scrollOffset) {
+            updateMenuButtons();
+        }
+    }
+
+    // Egyes gomb színének frissítése (pl. toggle állapot változáskor)
+    void updateSingleButtonColor(int index) {
+        int startVisible = scrollOffset;
+        int endVisible = scrollOffset + VISIBLE_ITEMS - 1;
+
+        if (index >= startVisible && index <= endVisible) {
+            int buttonIndex = index - scrollOffset;
+            if (buttonIndex >= 0 && buttonIndex < menuButtons.size()) {
+                ColorScheme newColors = getButtonColors(index);
+                menuButtons[buttonIndex]->setColorScheme(newColors);
+                menuButtons[buttonIndex]->markForRedraw();
+            }
+        }
+    }
+
+    // Gomb megnyomás szimulálása rotary kattintáskor
+    void simulateButtonPress(int index) {
+        int startVisible = scrollOffset;
+        int endVisible = scrollOffset + VISIBLE_ITEMS - 1;
+
+        if (index >= startVisible && index <= endVisible) {
+            int buttonIndex = index - scrollOffset;
+            if (buttonIndex >= 0 && buttonIndex < menuButtons.size()) {
+                auto button = menuButtons[buttonIndex];
+
+                // Pressed állapot beállítása
+                ColorScheme pressedColors = getButtonColors(index);
+                pressedColors.background = pressedColors.pressedBackground;
+                pressedColors.foreground = pressedColors.pressedForeground;
+
+                button->setColorScheme(pressedColors);
+                button->markForRedraw();
+
+                // Azonnali rajzolás
+                button->draw();
+
+                // Rövid késleltetés (vizuális visszajelzés)
+                delay(100);
+
+                // Vissza normál állapotra
+                ColorScheme normalColors = getButtonColors(index);
+                button->setColorScheme(normalColors);
+                button->markForRedraw();
+            }
+        }
+    }
     ColorScheme getButtonColors(int itemIndex) {
         ColorScheme colors = ColorScheme::defaultScheme();
 
-        if (itemIndex == selectedIndex) {
-            // Kiválasztott elem
-            colors.background = TFT_BLUE;
+        // Normál elemek típus szerint
+        const MenuItem &item = menuItems[itemIndex];
+        switch (item.type) {
+        case MenuItemType::BACK:
+            colors.background = TFT_RED;
+            colors.foreground = TFT_WHITE;
+            colors.pressedBackground = TFT_MAROON;
+            break;
+        case MenuItemType::TOGGLE:
+            if (item.toggleValue && *item.toggleValue) {
+                colors.background = TFT_GREEN;
+                colors.foreground = TFT_WHITE;
+                colors.pressedBackground = TFT_DARKGREEN;
+            } else {
+                colors.background = TFT_DARKGREY;
+                colors.foreground = TFT_LIGHTGREY;
+                colors.pressedBackground = TFT_BLUE;
+            }
+            break;
+        default:
+            // ACTION és egyéb típusok
+            colors.background = TFT_DARKGREY;
             colors.foreground = TFT_WHITE;
             colors.pressedBackground = TFT_BLUE;
+            break;
+        }
+
+        // Kiválasztott elem jelölése csak finoman - világosabb keret
+        if (itemIndex == selectedIndex) {
+            colors.border = TFT_CYAN;
         } else {
-            // Normál elemek típus szerint
-            const MenuItem &item = menuItems[itemIndex];
-            switch (item.type) {
-            case MenuItemType::BACK:
-                colors.background = TFT_RED;
-                colors.foreground = TFT_WHITE;
-                colors.pressedBackground = TFT_RED;
-                break;
-            case MenuItemType::TOGGLE:
-                if (item.toggleValue && *item.toggleValue) {
-                    colors.background = TFT_GREEN;
-                    colors.foreground = TFT_WHITE;
-                } else {
-                    colors.background = TFT_DARKGREY;
-                    colors.foreground = TFT_LIGHTGREY;
-                }
-                break;
-            default:
-                colors.background = TFT_DARKGREY;
-                colors.foreground = TFT_WHITE;
-                break;
-            }
+            colors.border = TFT_DARKGREY;
         }
 
         return colors;
     }
-
     virtual void onActivate() override {
         DEBUG("MenuScreen activated\n");
-        updateMenuButtons();
-        // Force redraw of all components when screen is activated
+        // Csak akkor építjük újra a menüt, ha még nincs létrehozva
+        if (menuButtons.empty()) {
+            updateMenuButtons();
+        }
+        // Csak a kiválasztott elem színét frissítjük
+        updateSelectionColors(-1, selectedIndex);
+        // Jelöljük az egész képernyőt újrarajzolásra, de ne töröljük a gombokat
         markForRedraw();
-        forceChildRedraw();
     }
 
     virtual void handleOwnLoop() override {
@@ -234,11 +362,11 @@ class MenuScreen : public Screen {
                     item.action();
                 }
                 break;
-
             case MenuItemType::TOGGLE:
                 if (item.toggleValue) {
                     *item.toggleValue = !(*item.toggleValue);
-                    updateMenuButtons(); // Frissítjük a gombok megjelenését
+                    // Csak az adott gomb színét frissítjük
+                    updateSingleButtonColor(index);
                 }
                 break;
             case MenuItemType::SUBMENU:
