@@ -7,11 +7,11 @@
  * @brief Kiírja az FM állomáslista tartalmát a soros portra.
  * @param fmStore Az FM állomáslista objektum.
  */
-void DebugDataInspector::printFmStationData(const FmStationList_t& fmData) {
+void DebugDataInspector::printFmStationData(const FmStationList_t &fmData) {
 #ifdef __DEBUG
     DEBUG("=== DebugDataInspector -> FM Station Store ===\n");
     for (size_t i = 0; i < fmData.count; ++i) {
-        const StationData& station = fmData.stations[i];
+        const StationData &station = fmData.stations[i];
         DEBUG("  Station %d: Freq: %d, Name: %s, Mod: %d, BFO: %d, BW: %d\n", i, station.frequency, station.name, station.modulation, station.bfoOffset, station.bandwidthIndex);
     }
     DEBUG("====================\n");
@@ -22,11 +22,11 @@ void DebugDataInspector::printFmStationData(const FmStationList_t& fmData) {
  * @brief Kiírja az AM állomáslista tartalmát a soros portra.
  * @param amStore Az AM állomáslista objektum.
  */
-void DebugDataInspector::printAmStationData(const AmStationList_t& amData) {
+void DebugDataInspector::printAmStationData(const AmStationList_t &amData) {
 #ifdef __DEBUG
     Serial.println("=== DebugDataInspector -> AM Station Store ===");
     for (size_t i = 0; i < amData.count; ++i) {
-        const StationData& station = amData.stations[i];
+        const StationData &station = amData.stations[i];
         DEBUG("  Station %d: Freq: %d, Name: %s, Mod: %d, BFO: %d, BW: %d\n", i, station.frequency, station.name, station.modulation, station.bfoOffset, station.bandwidthIndex);
     }
     DEBUG("====================\n");
@@ -37,7 +37,7 @@ void DebugDataInspector::printAmStationData(const AmStationList_t& amData) {
  * @brief Kiírja a Config struktúra tartalmát a soros portra.
  * @param config A Config objektum.
  */
-void DebugDataInspector::printConfigData(const Config_t& configData) {
+void DebugDataInspector::printConfigData(const Config_t &configData) {
 #ifdef __DEBUG
     DEBUG("=== DebugDataInspector -> Config Data ===\n");
     DEBUG("  bandIdx: %u\n", configData.bandIdx);
