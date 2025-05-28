@@ -1,51 +1,48 @@
 #include "Band.h"
 
-#include <patch_full.h>  // SSB patch for whole SSBRX full download
+#include <patch_full.h> // SSB patch for whole SSBRX full download
 
 #include "rtVars.h"
 
-// PROGMEM - ben tárolt állandó tábla
-const BandTableConst bandTableConst[] = {
-    {"FM", FM_BAND_TYPE, FM, 6400, 10800, 9390, 10, false},    //  FM          0   // 93.9MHz Petőfi
-    {"LW", LW_BAND_TYPE, AM, 100, 514, 198, 9, false},         //  LW          1
-    {"MW", MW_BAND_TYPE, AM, 514, 1800, 540, 9, false},        //  MW          2   // 540kHz Kossuth
-    {"800m", SW_BAND_TYPE, AM, 280, 470, 284, 1, true},        // Ham  800M    3
-    {"630m", SW_BAND_TYPE, LSB, 470, 480, 475, 1, true},       // Ham  630M    4
-    {"160m", SW_BAND_TYPE, LSB, 1800, 2000, 1850, 1, true},    // Ham  160M    5
-    {"120m", SW_BAND_TYPE, AM, 2000, 3200, 2400, 5, false},    //      120M    6
-    {"90m", SW_BAND_TYPE, AM, 3200, 3500, 3300, 5, false},     //       90M    7
-    {"80m", SW_BAND_TYPE, LSB, 3500, 3900, 3630, 1, true},     // Ham   80M    8
-    {"75m", SW_BAND_TYPE, AM, 3900, 5300, 3950, 5, false},     //       75M    9
-    {"60m", SW_BAND_TYPE, USB, 5300, 5900, 5375, 1, true},     // Ham   60M   10
-    {"49m", SW_BAND_TYPE, AM, 5900, 7000, 6000, 5, false},     //       49M   11
-    {"40m", SW_BAND_TYPE, LSB, 7000, 7500, 7074, 1, true},     // Ham   40M   12
-    {"41m", SW_BAND_TYPE, AM, 7200, 9000, 7210, 5, false},     //       41M   13
-    {"31m", SW_BAND_TYPE, AM, 9000, 10000, 9600, 5, false},    //       31M   14
-    {"30m", SW_BAND_TYPE, USB, 10000, 10100, 10100, 1, true},  // Ham   30M   15
-    {"25m", SW_BAND_TYPE, AM, 10200, 13500, 11700, 5, false},  //       25M   16
-    {"22m", SW_BAND_TYPE, AM, 13500, 14000, 13700, 5, false},  //       22M   17
-    {"20m", SW_BAND_TYPE, USB, 14000, 14500, 14074, 1, true},  // Ham   20M   18
-    {"19m", SW_BAND_TYPE, AM, 14500, 17500, 15700, 5, false},  //       19M   19
-    {"17m", SW_BAND_TYPE, AM, 17500, 18000, 17600, 5, false},  //       17M   20
-    {"16m", SW_BAND_TYPE, USB, 18000, 18500, 18100, 1, true},  // Ham   16M   21
-    {"15m", SW_BAND_TYPE, AM, 18500, 21000, 18950, 5, false},  //       15M   22
-    {"14m", SW_BAND_TYPE, USB, 21000, 21500, 21074, 1, true},  // Ham   14M   23
-    {"13m", SW_BAND_TYPE, AM, 21500, 24000, 21500, 5, false},  //       13M   24
-    {"12m", SW_BAND_TYPE, USB, 24000, 25500, 24940, 1, true},  // Ham   12M   25
-    {"11m", SW_BAND_TYPE, AM, 25500, 26100, 25800, 5, false},  //       11M   26
-    {"CB", SW_BAND_TYPE, AM, 26100, 28000, 27200, 1, false},   // CB band     27
-    {"10m", SW_BAND_TYPE, USB, 28000, 30000, 28500, 1, true},  // Ham   10M   28
-    {"SW", SW_BAND_TYPE, AM, 100, 30000, 15500, 5, false}      // Whole SW    29
+// Egyszerűsített BandTable tömb
+BandTable bandTable[] = {
+    {"FM", FM_BAND_TYPE, FM, 6400, 10800, 9390, 10, false, 0, 0, 0, 0, 0, 0},   //  FM          0   // 93.9MHz
+    {"LW", LW_BAND_TYPE, AM, 100, 514, 198, 9, false, 0, 0, 0, 0, 0, 0},        //  LW          1
+    {"MW", MW_BAND_TYPE, AM, 514, 1800, 540, 9, false, 0, 0, 0, 0, 0, 0},       //  MW          2   // 540kHz Kossuth
+    {"800m", SW_BAND_TYPE, AM, 280, 470, 284, 1, true, 0, 0, 0, 0, 0, 0},       // Ham  800M    3
+    {"630m", SW_BAND_TYPE, LSB, 470, 480, 475, 1, true, 0, 0, 0, 0, 0, 0},      // Ham  630M    4
+    {"160m", SW_BAND_TYPE, LSB, 1800, 2000, 1850, 1, true, 0, 0, 0, 0, 0, 0},   // Ham  160M    5
+    {"120m", SW_BAND_TYPE, AM, 2000, 3200, 2400, 5, false, 0, 0, 0, 0, 0, 0},   //      120M    6
+    {"90m", SW_BAND_TYPE, AM, 3200, 3500, 3300, 5, false, 0, 0, 0, 0, 0, 0},    //       90M    7
+    {"80m", SW_BAND_TYPE, LSB, 3500, 3900, 3630, 1, true, 0, 0, 0, 0, 0, 0},    // Ham   80M    8
+    {"75m", SW_BAND_TYPE, AM, 3900, 5300, 3950, 5, false, 0, 0, 0, 0, 0, 0},    //       75M    9
+    {"60m", SW_BAND_TYPE, USB, 5300, 5900, 5375, 1, true, 0, 0, 0, 0, 0, 0},    // Ham   60M   10
+    {"49m", SW_BAND_TYPE, AM, 5900, 7000, 6000, 5, false, 0, 0, 0, 0, 0, 0},    //       49M   11
+    {"40m", SW_BAND_TYPE, LSB, 7000, 7500, 7074, 1, true, 0, 0, 0, 0, 0, 0},    // Ham   40M   12
+    {"41m", SW_BAND_TYPE, AM, 7200, 9000, 7210, 5, false, 0, 0, 0, 0, 0, 0},    //       41M   13
+    {"31m", SW_BAND_TYPE, AM, 9000, 10000, 9600, 5, false, 0, 0, 0, 0, 0, 0},   //       31M   14
+    {"30m", SW_BAND_TYPE, USB, 10000, 10100, 10100, 1, true, 0, 0, 0, 0, 0, 0}, // Ham   30M   15
+    {"25m", SW_BAND_TYPE, AM, 10200, 13500, 11700, 5, false, 0, 0, 0, 0, 0, 0}, //       25M   16
+    {"22m", SW_BAND_TYPE, AM, 13500, 14000, 13700, 5, false, 0, 0, 0, 0, 0, 0}, //       22M   17
+    {"20m", SW_BAND_TYPE, USB, 14000, 14500, 14074, 1, true, 0, 0, 0, 0, 0, 0}, // Ham   20M   18
+    {"19m", SW_BAND_TYPE, AM, 14500, 17500, 15700, 5, false, 0, 0, 0, 0, 0, 0}, //       19M   19
+    {"17m", SW_BAND_TYPE, AM, 17500, 18000, 17600, 5, false, 0, 0, 0, 0, 0, 0}, //       17M   20
+    {"16m", SW_BAND_TYPE, USB, 18000, 18500, 18100, 1, true, 0, 0, 0, 0, 0, 0}, // Ham   16M   21
+    {"15m", SW_BAND_TYPE, AM, 18500, 21000, 18950, 5, false, 0, 0, 0, 0, 0, 0}, //       15M   22
+    {"14m", SW_BAND_TYPE, USB, 21000, 21500, 21074, 1, true, 0, 0, 0, 0, 0, 0}, // Ham   14M   23
+    {"13m", SW_BAND_TYPE, AM, 21500, 24000, 21500, 5, false, 0, 0, 0, 0, 0, 0}, //       13M   24
+    {"12m", SW_BAND_TYPE, USB, 24000, 25500, 24940, 1, true, 0, 0, 0, 0, 0, 0}, // Ham   12M   25
+    {"11m", SW_BAND_TYPE, AM, 25500, 26100, 25800, 5, false, 0, 0, 0, 0, 0, 0}, //       11M   26
+    {"CB", SW_BAND_TYPE, AM, 26100, 28000, 27200, 1, false, 0, 0, 0, 0, 0, 0},  // CB band     27
+    {"10m", SW_BAND_TYPE, USB, 28000, 30000, 28500, 1, true, 0, 0, 0, 0, 0, 0}, // Ham   10M   28
+    {"SW", SW_BAND_TYPE, AM, 100, 30000, 15500, 5, false, 0, 0, 0, 0, 0, 0}     // Whole SW    29
 };
 
 /// Itt határozzuk meg a BAND_COUNT értékét!
-const size_t BANDTABLE_COUNT = ARRAY_ITEM_COUNT(bandTableConst);
-
-// A Kombinált tábla RAM-ban
-BandTable bandTable[BANDTABLE_COUNT];
+const size_t BANDTABLE_COUNT = ARRAY_ITEM_COUNT(bandTable);
 
 // BandMode description
-const char* Band::bandModeDesc[5] = {"FM", "LSB", "USB", "AM", "CW"};
+const char *Band::bandModeDesc[5] = {"FM", "LSB", "USB", "AM", "CW"};
 
 // Sávszélesség struktúrák tömbjei - ez indexre állítódik az si4735-ben!
 const BandWidth Band::bandWidthFM[] = {{"AUTO", 0}, {"110", 1}, {"84", 2}, {"60", 3}, {"40", 4}};
@@ -54,16 +51,16 @@ const BandWidth Band::bandWidthSSB[] = {{"0.5", 4}, {"1.0", 5}, {"1.2", 0}, {"2.
 
 // AM Lépésköz
 const FrequencyStep Band::stepSizeAM[] = {
-    {"1kHz", 1},   // "1kHz" -> 1
-    {"5kHz", 5},   // "5kHz" -> 5
-    {"9kHz", 9},   // "9kHz" -> 9
-    {"10kHz", 10}  // "10kHz" -> 10
+    {"1kHz", 1},  // "1kHz" -> 1
+    {"5kHz", 5},  // "5kHz" -> 5
+    {"9kHz", 9},  // "9kHz" -> 9
+    {"10kHz", 10} // "10kHz" -> 10
 };
 // FM Lépésköz
 const FrequencyStep Band::stepSizeFM[] = {
-    {"50kHz", 5},    // "50kHz" -> 5
-    {"100kHz", 10},  // "100kHz" -> 10
-    {"1MHz", 100}    // "1MHz" -> 100
+    {"50kHz", 5},   // "50kHz" -> 5
+    {"100kHz", 10}, // "100kHz" -> 10
+    {"1MHz", 100}   // "1MHz" -> 100
 };
 
 // BFO Lépésköz
@@ -77,30 +74,26 @@ const FrequencyStep Band::stepSizeBFO[] = {
 /**
  * Konstruktor
  */
-Band::Band(SI4735& si4735, Config& configRef) : si4735(si4735), configRef(configRef) {
+Band::Band(SI4735 &si4735, Config &configRef) : si4735(si4735), configRef(configRef) {
 
-    // A BandTable inicializálása
+    // A BandTable inicializálása - változó adatok beállítása, ha még nincsenek inicializálva
     for (uint8_t i = 0; i < BANDTABLE_COUNT; i++) {
 
-        // Flash adatok pointerének beállítása
-        bandTable[i].pConstData = &bandTableConst[i];  // PROGMEM mutató beállítása, hátha kell
-
-        // RAM Változó adatok inicializálása
-        //  Ha még nem volt az EEPROM mentésből visszaállítás, akkor most bemásoljuk a default értékeket a változó értékekbe
-        if (bandTable[i].varData.currFreq == 0) {
-            bandTable[i].varData.currFreq = bandTableConst[i].defFreq;  // Frekvencia
-            bandTable[i].varData.currStep = bandTableConst[i].defStep;  // Lépés
-            bandTable[i].varData.currMod = bandTableConst[i].prefMod;   // Moduláció
+        // Ha még nem volt az EEPROM mentésből visszaállítás, akkor most bemásoljuk a default értékeket a változó értékekbe
+        if (bandTable[i].currFreq == 0) {
+            bandTable[i].currFreq = bandTable[i].defFreq; // Frekvencia
+            bandTable[i].currStep = bandTable[i].defStep; // Lépés
+            bandTable[i].currMod = bandTable[i].prefMod;  // Moduláció
 
             // Antenna tunning capacitor
-            if (bandTableConst[i].bandType != FM_BAND_TYPE or bandTableConst[i].bandType != MW_BAND_TYPE or bandTableConst[i].bandType != LW_BAND_TYPE) {
-                bandTable[i].varData.antCap = 0;  // Antenna tunning capacitor
+            if (bandTable[i].bandType != FM_BAND_TYPE && bandTable[i].bandType != MW_BAND_TYPE && bandTable[i].bandType != LW_BAND_TYPE) {
+                bandTable[i].antCap = 1; // SW esetén antenna tunning capacitor szükséges
             } else {
-                bandTable[i].varData.antCap = 1;
+                bandTable[i].antCap = 0; // FM/MW/LW esetén nem
             }
 
-            bandTable[i].varData.lastBFO = 0;
-            bandTable[i].varData.lastmanuBFO = 0;
+            bandTable[i].lastBFO = 0;
+            bandTable[i].lastmanuBFO = 0;
         }
     }
 }
@@ -111,13 +104,13 @@ Band::Band(SI4735& si4735, Config& configRef) : si4735(si4735), configRef(config
  * @param bandIdx A keresett sáv indexe
  * @return A BandTable rekord referenciája, vagy egy üres rekord, ha nem található
  */
-BandTable& Band::getBandByIdx(uint8_t bandIdx) {
+BandTable &Band::getBandByIdx(uint8_t bandIdx) {
 
-    static BandTable emptyBand = {nullptr, {0, 0, 0, 0}};  // Üres rekord
-    if (bandIdx >= BANDTABLE_COUNT) return emptyBand;      // Érvénytelen index esetén üres rekordot adunk vissza
+    static BandTable emptyBand = {"", 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0}; // Üres rekord
+    if (bandIdx >= BANDTABLE_COUNT)
+        return emptyBand; // Érvénytelen index esetén üres rekordot adunk vissza
 
-    // return bandTableVar[index];
-    return bandTable[bandIdx];  // Egyébként visszaadjuk a megfelelő rekordot
+    return bandTable[bandIdx]; // Egyébként visszaadjuk a megfelelő rekordot
 }
 
 /**
@@ -126,14 +119,14 @@ BandTable& Band::getBandByIdx(uint8_t bandIdx) {
  * @param bandName A keresett sáv neve
  * @return A BandTable rekord indexe, vagy -1, ha nem található
  */
-int8_t Band::getBandIdxByBandName(const char* bandName) {
+int8_t Band::getBandIdxByBandName(const char *bandName) {
 
     for (size_t i = 0; i < BANDTABLE_COUNT; i++) {
-        if (strcmp(bandName, bandTableConst[i].bandName) == 0) {
-            return i;  // Megtaláltuk az indexet
+        if (strcmp(bandName, bandTable[i].bandName) == 0) {
+            return i; // Megtaláltuk az indexet
         }
     }
-    return -1;  // Ha nem található
+    return -1; // Ha nem található
 }
 
 /**
@@ -142,18 +135,18 @@ int8_t Band::getBandIdxByBandName(const char* bandName) {
  * @param count talált elemek száma
  * @param isHamFilter HAM szűrő
  */
-const char** Band::getBandNames(uint8_t& count, bool isHamFilter) {
+const char **Band::getBandNames(uint8_t &count, bool isHamFilter) {
 
-    static const char* filteredNames[BANDTABLE_COUNT];  // Tároló a kiválasztott nevekre
-    count = 0;                                          // Kezdőérték
+    static const char *filteredNames[BANDTABLE_COUNT]; // Tároló a kiválasztott nevekre
+    count = 0;                                         // Kezdőérték
 
     for (size_t i = 0; i < BANDTABLE_COUNT; i++) {
-        if (bandTableConst[i].isHam == isHamFilter) {             // HAM sáv szűrés
-            filteredNames[count++] = bandTableConst[i].bandName;  // Közvetlen pointer hozzáadás
+        if (bandTable[i].isHam == isHamFilter) {            // HAM sáv szűrés
+            filteredNames[count++] = bandTable[i].bandName; // Közvetlen pointer hozzáadás
         }
     }
 
-    return filteredNames;  // A pointert visszaadjuk
+    return filteredNames; // A pointert visszaadjuk
 }
 
 /**
@@ -170,13 +163,13 @@ void Band::loadSSB() {
     }
 
     si4735.reset();
-    si4735.queryLibraryId();  // Is it really necessary here? I will check it.
+    si4735.queryLibraryId(); // Is it really necessary here? I will check it.
     si4735.patchPowerUp();
     delay(50);
 
-    si4735.setI2CFastMode();  // Recommended
+    si4735.setI2CFastMode(); // Recommended
     si4735.downloadPatch(ssb_patch_content, sizeof(ssb_patch_content));
-    si4735.setI2CStandardMode();  // goes back to default (100KHz)
+    si4735.setI2CStandardMode(); // goes back to default (100KHz)
     delay(50);
 
     // Parameters
@@ -197,10 +190,10 @@ void Band::loadSSB() {
 void Band::useBand() {
 
     // Kikeressük az aktuális Band rekordot
-    BandTable& currentBand = getCurrentBand();
+    BandTable &currentBand = getCurrentBand();
     uint8_t currentBandType = getCurrentBandType();
 
-    DEBUG("Band::useBand() -> bandName: %s currStep: %d, currentMode: %s\n", getCurrentBandName(), currentBand.varData.currStep, getCurrentBandModeDesc());
+    DEBUG("Band::useBand() -> bandName: %s currStep: %d, currentMode: %s\n", getCurrentBandName(), currentBand.currStep, getCurrentBandModeDesc());
 
     //---- CurrentStep beállítása a band rekordban
 
@@ -214,86 +207,77 @@ void Band::useBand() {
         // Határellenőrzés
         if (stepIndex >= ARRAY_ITEM_COUNT(stepSizeAM)) {
             DEBUG("Hiba: Érvénytelen ssIdxMW index: %d. Alapértelmezett használata.\n", stepIndex);
-            stepIndex = 0;                    // Visszaállás alapértelmezettre (pl. 1kHz)
-            config.data.ssIdxMW = stepIndex;  // Opcionális: Konfig frissítése
+            stepIndex = 0;                   // Visszaállás alapértelmezettre (pl. 1kHz)
+            config.data.ssIdxMW = stepIndex; // Opcionális: Konfig frissítése        }
+            currentBand.currStep = stepSizeAM[stepIndex].value;
+        } else if (currentBandType == SW_BAND_TYPE) {
+            // currentBand.currentStep = static_cast<uint8_t>(atoi(Band::stepSizeAM[config.data.ssIdxAM]));
+            // AM/SSB/CW Shortwave esetén
+            stepIndex = config.data.ssIdxAM;
+            // Határellenőrzés
+            if (stepIndex >= ARRAY_ITEM_COUNT(stepSizeAM)) {
+                DEBUG("Hiba: Érvénytelen ssIdxAM index: %d. Alapértelmezett használata.\n", stepIndex);
+                stepIndex = 0;                   // Visszaállás alapértelmezettre
+                config.data.ssIdxAM = stepIndex; // Opcionális: Konfig frissítése
+            }
+            currentBand.currStep = stepSizeAM[stepIndex].value;
+        } else {
+            // FM esetén csak 3 érték lehet - {"50Khz", "100KHz", "1MHz"};
+            // static_cast<uint8_t>(atoi(Band::stepSizeFM[config.data.ssIdxFM]));
+            stepIndex = config.data.ssIdxFM;
+            // Határellenőrzés
+            if (stepIndex >= ARRAY_ITEM_COUNT(stepSizeFM)) {
+                DEBUG("Hiba: Érvénytelen ssIdxFM index: %d. Alapértelmezett használata.\n", stepIndex);
+                stepIndex = 0;                   // Visszaállás alapértelmezettre
+                config.data.ssIdxFM = stepIndex; // Opcionális: Konfig frissítése
+            }
+            currentBand.currStep = stepSizeFM[stepIndex].value;
         }
-        currentBand.varData.currStep = stepSizeAM[stepIndex].value;
 
-    } else if (currentBandType == SW_BAND_TYPE) {
-        // currentBand.currentStep = static_cast<uint8_t>(atoi(Band::stepSizeAM[config.data.ssIdxAM]));
-        // AM/SSB/CW Shortwave esetén
-        stepIndex = config.data.ssIdxAM;
-        // Határellenőrzés
-        if (stepIndex >= ARRAY_ITEM_COUNT(stepSizeAM)) {
-            DEBUG("Hiba: Érvénytelen ssIdxAM index: %d. Alapértelmezett használata.\n", stepIndex);
-            stepIndex = 0;                    // Visszaállás alapértelmezettre
-            config.data.ssIdxAM = stepIndex;  // Opcionális: Konfig frissítése
-        }
-        currentBand.varData.currStep = stepSizeAM[stepIndex].value;
+        if (currentBandType == FM_BAND_TYPE) {
+            ssbLoaded = false;
+            rtv::bfoOn = false;
+            // Antenna tuning capacitor beállítása (FM esetén antenna tuning capacitor nem kell)
+            currentBand.antCap = getDefaultAntCapValue();
+            si4735.setTuneFrequencyAntennaCapacitor(currentBand.antCap);
+            // delay(100);
 
-    } else {
-        // FM esetén csak 3 érték lehet - {"50Khz", "100KHz", "1MHz"};
-        // static_cast<uint8_t>(atoi(Band::stepSizeFM[config.data.ssIdxFM]));
-        stepIndex = config.data.ssIdxFM;
-        // Határellenőrzés
-        if (stepIndex >= ARRAY_ITEM_COUNT(stepSizeFM)) {
-            DEBUG("Hiba: Érvénytelen ssIdxFM index: %d. Alapértelmezett használata.\n", stepIndex);
-            stepIndex = 0;                    // Visszaállás alapértelmezettre
-            config.data.ssIdxFM = stepIndex;  // Opcionális: Konfig frissítése
-        }
-        currentBand.varData.currStep = stepSizeFM[stepIndex].value;
-    }
-
-    if (currentBandType == FM_BAND_TYPE) {
-        ssbLoaded = false;
-        rtv::bfoOn = false;
-
-        // Antenna tuning capacitor beállítása (FM esetén antenna tuning capacitor nem kell)
-        currentBand.varData.antCap = getDefaultAntCapValue();
-        si4735.setTuneFrequencyAntennaCapacitor(currentBand.varData.antCap);
-        // delay(100);
-
-        si4735.setFM(currentBand.pConstData->minimumFreq, currentBand.pConstData->maximumFreq, currentBand.varData.currFreq, currentBand.varData.currStep);
-        si4735.setFMDeEmphasis(1);  // 1 = 50 μs. Usedin Europe, Australia, Japan;  2 = 75 μs. Used in USA (default)
-        si4735.RdsInit();
+            si4735.setFM(currentBand.minimumFreq, currentBand.maximumFreq, currentBand.currFreq, currentBand.currStep);
+            si4735.setFMDeEmphasis(1); // 1 = 50 μs. Usedin Europe, Australia, Japan;  2 = 75 μs. Used in USA (default)
+            si4735.RdsInit();
 #define RDS_ENABLE 1
 #define RDS_BLOCK_ERROR_TRESHOLD 2
-        si4735.setRdsConfig(RDS_ENABLE, RDS_BLOCK_ERROR_TRESHOLD, RDS_BLOCK_ERROR_TRESHOLD, RDS_BLOCK_ERROR_TRESHOLD, RDS_BLOCK_ERROR_TRESHOLD);
+            si4735.setRdsConfig(RDS_ENABLE, RDS_BLOCK_ERROR_TRESHOLD, RDS_BLOCK_ERROR_TRESHOLD, RDS_BLOCK_ERROR_TRESHOLD, RDS_BLOCK_ERROR_TRESHOLD);
+        } else {                                          // AM-ben vagyunk
+            currentBand.antCap = getDefaultAntCapValue(); // Sima AM esetén antenna tuning capacitor nem kell
+            si4735.setTuneFrequencyAntennaCapacitor(currentBand.antCap);
 
-    } else {
+            if (ssbLoaded) {
+                // SSB vagy CW mód
+                bool isCWMode = (currentBand.currMod == CW);
 
-        // AM-ben vagyunk
-        currentBand.varData.antCap = getDefaultAntCapValue();  // Sima AM esetén antenna tuning capacitor nem kell
-        si4735.setTuneFrequencyAntennaCapacitor(currentBand.varData.antCap);
+                // Mód beállítása (LSB-t használunk alapnak CW-hez)
+                uint8_t modeForChip = isCWMode ? LSB : currentBand.currMod;
+                si4735.setSSB(currentBand.minimumFreq, currentBand.maximumFreq, currentBand.currFreq,
+                              1, // SSB/CW esetén a step mindig 1kHz a chipen belül
+                              modeForChip);
 
-        if (ssbLoaded) {
-            // SSB vagy CW mód
+                // BFO beállítása                        // CW mód: Fix BFO offset (pl. 700 Hz) + manuális finomhangolás
+                const int16_t cwBaseOffset = isCWMode ? configRef.data.cwReceiverOffsetHz : 0; // Alap CW eltolás a configból
+                si4735.setSSBBfo(cwBaseOffset + config.data.currentBFO + config.data.currentBFOmanu);
+                rtv::CWShift = isCWMode; // Jelezzük a kijelzőnek
 
-            bool isCWMode = (currentBand.varData.currMod == CW);
+                // SSB/CW esetén a lépésköz a chipen mindig 1kHz, de a finomhangolás BFO-val történik
+                currentBand.currStep = 1;
+                si4735.setFrequencyStep(currentBand.currStep);
 
-            // Mód beállítása (LSB-t használunk alapnak CW-hez)
-            uint8_t modeForChip = isCWMode ? LSB : currentBand.varData.currMod;
-            si4735.setSSB(currentBand.pConstData->minimumFreq, currentBand.pConstData->maximumFreq, currentBand.varData.currFreq,
-                          1,  // SSB/CW esetén a step mindig 1kHz a chipen belül
-                          modeForChip);
-
-            // BFO beállítása
-            // CW mód: Fix BFO offset (pl. 700 Hz) + manuális finomhangolás
-            const int16_t cwBaseOffset = isCWMode ? configRef.data.cwReceiverOffsetHz : 0;  // Alap CW eltolás a configból
-            si4735.setSSBBfo(cwBaseOffset + config.data.currentBFO + config.data.currentBFOmanu);
-            rtv::CWShift = isCWMode;  // Jelezzük a kijelzőnek
-
-            // SSB/CW esetén a lépésköz a chipen mindig 1kHz, de a finomhangolás BFO-val történik
-            currentBand.varData.currStep = 1;
-            si4735.setFrequencyStep(currentBand.varData.currStep);
-
-        } else {
-            // Sima AM mód
-            si4735.setAM(currentBand.pConstData->minimumFreq, currentBand.pConstData->maximumFreq, currentBand.varData.currFreq, currentBand.varData.currStep);
-            // si4735.setAutomaticGainControl(1, 0);
-            // si4735.setAmSoftMuteMaxAttenuation(0); // // Disable Soft Mute for AM
-            rtv::bfoOn = false;
-            rtv::CWShift = false;  // AM módban biztosan nincs CW shift
+            } else { // Sima AM mód
+                si4735.setAM(currentBand.minimumFreq, currentBand.maximumFreq, currentBand.currFreq, currentBand.currStep);
+                // si4735.setAutomaticGainControl(1, 0);
+                // si4735.setAmSoftMuteMaxAttenuation(0); // // Disable Soft Mute for AM
+                rtv::bfoOn = false;
+                rtv::CWShift = false; // AM módban biztosan nincs CW shift
+            }
         }
     }
 }
@@ -305,8 +289,8 @@ void Band::setBandWidth() {
 
     DEBUG("Band::setBandWidth()\n");
 
-    BandTable& currentBand = getCurrentBand();
-    uint8_t currMod = currentBand.varData.currMod;
+    BandTable &currentBand = getCurrentBand();
+    uint8_t currMod = currentBand.currMod;
 
     if (currMod == LSB or currMod == USB or currMod == CW) {
         /**
@@ -365,8 +349,8 @@ void Band::setBandWidth() {
     } else if (currMod == FM) {
         /**
          * @brief Sets the Bandwith on FM mode
-         * @details Selects bandwidth of channel filter applied at the demodulation stage. Default is automatic which means the device automatically selects proper channel filter.
-         * <BR>
+         * @details Selects bandwidth of channel filter applied at the demodulation stage. Default is automatic which means the device automatically selects proper
+         * channel filter. <BR>
          * @details | Filter  | Description |
          * @details | ------- | -------------|
          * @details |    0    | Automatically select proper channel filter (Default) |
@@ -387,38 +371,34 @@ void Band::setBandWidth() {
 void Band::bandInit(bool sysStart) {
 
     DEBUG("Band::BandInit() ->bandIdx: %d\n", config.data.bandIdx);
-    BandTable& curretBand = getCurrentBand();
+    BandTable &curretBand = getCurrentBand();
 
     if (getCurrentBandType() == FM_BAND_TYPE) {
         si4735.setup(PIN_SI4735_RESET, FM_BAND_TYPE);
         si4735.setFM();
 
         // Seek beállítások
-        si4735.setSeekFmRssiThreshold(2);  // 2dB RSSI threshold
-        si4735.setSeekFmSrnThreshold(2);   // 2dB SNR threshold
-        si4735.setSeekFmSpacing(10);       // 10kHz seek lépésköz
-                                           // 87.5MHz - 108MHz között
-        si4735.setSeekFmLimits(curretBand.pConstData->minimumFreq, curretBand.pConstData->maximumFreq);
+        si4735.setSeekFmRssiThreshold(2); // 2dB RSSI threshold
+        si4735.setSeekFmSrnThreshold(2);  // 2dB SNR threshold
+        si4735.setSeekFmSpacing(10);      // 10kHz seek lépésköz
+                                          // 87.5MHz - 108MHz között
+        si4735.setSeekFmLimits(curretBand.minimumFreq, curretBand.maximumFreq);
 
     } else {
         si4735.setup(PIN_SI4735_RESET, MW_BAND_TYPE);
         si4735.setAM();
 
         // Seek beállítások
-        si4735.setSeekAmRssiThreshold(50);  // 50dB RSSI threshold
-        si4735.setSeekAmSrnThreshold(20);   // 20dB SNR threshold
+        si4735.setSeekAmRssiThreshold(50); // 50dB RSSI threshold
+        si4735.setSeekAmSrnThreshold(20);  // 20dB SNR threshold
     }
 
     // Rendszer indítás van?
-    if (sysStart) {
-
-        // rtv::freqstep = 1000;  // 1kHz
+    if (sysStart) { // rtv::freqstep = 1000;  // 1kHz
         rtv::freqDec = config.data.currentBFO;
-        curretBand.varData.lastBFO = config.data.currentBFO;
+        curretBand.lastBFO = config.data.currentBFO;
         // curretBand.prefMod = config.data.currentMode;
-        // curretBand.varData.currFreq = config.data.currentFreq;
-
-        si4735.setVolume(config.data.currVolume);  // Hangerő
+        // curretBand.currFreq = config.data.currentFreq;            si4735.setVolume(config.data.currVolume); // Hangerő
     }
 }
 
@@ -431,33 +411,29 @@ void Band::bandSet(bool useDefaults) {
     DEBUG("Band::bandSet(useDefaults: %s)\n", useDefaults ? "true" : "false");
 
     // Kikeressük az aktuális Band rekordot
-    BandTable& currentBand = getCurrentBand();
-
-    // Demoduláció beállítása
-    uint8_t currMod = currentBand.varData.currMod;
+    BandTable &currentBand = getCurrentBand(); // Demoduláció beállítása
+    uint8_t currMod = currentBand.currMod;
 
     // A sávhoz preferált demodulációs módot állítunk be?
     if (useDefaults) {
         // Átmásoljuk a preferált modulációs módot
-        currMod = currentBand.varData.currMod = currentBand.pConstData->prefMod;
-        ssbLoaded = false;  // SSB patch betöltése szükséges
+        currMod = currentBand.currMod = currentBand.prefMod;
+        ssbLoaded = false; // SSB patch betöltése szükséges
     }
 
     if (currMod == AM or currMod == FM) {
 
-        ssbLoaded = false;  // FIXME: Ez kell? Band váltás után megint be kell tölteni az SSB-t?
+        ssbLoaded = false; // FIXME: Ez kell? Band váltás után megint be kell tölteni az SSB-t?
 
     } else if (currMod == LSB or currMod == USB or currMod == CW) {
         if (ssbLoaded == false) {
             this->loadSSB();
         }
     }
-
     useBand();
     setBandWidth();
-
     // Antenna Tunning Capacitor beállítása
-    si4735.setTuneFrequencyAntennaCapacitor(currentBand.varData.antCap);
+    si4735.setTuneFrequencyAntennaCapacitor(currentBand.antCap);
 }
 
 /**
@@ -466,17 +442,15 @@ void Band::bandSet(bool useDefaults) {
 void Band::tuneMemoryStation(uint16_t frequency, int16_t bfoOffset, uint8_t bandIndex, uint8_t demodModIndex, uint8_t bandwidthIndex) {
 
     // 1. Elkérjük a Band táblát
-    config.data.bandIdx = bandIndex;  // Band index beállítása
-    BandTable& currentBand = this->getCurrentBand();
-
-    // 2. Demodulátor beállítása a chipen.  Ha CW módra váltunk, akkor nullázzuk a finomhangolási BFO-t
-    uint8_t savedMod = demodModIndex;  // A demodulációs mód kiemelése
+    config.data.bandIdx = bandIndex;                 // Band index beállítása
+    BandTable &currentBand = this->getCurrentBand(); // 2. Demodulátor beállítása a chipen.  Ha CW módra váltunk, akkor nullázzuk a finomhangolási BFO-t
+    uint8_t savedMod = demodModIndex;                // A demodulációs mód kiemelése
     if (savedMod != CW and rtv::CWShift == true) {
-        currentBand.varData.lastBFO = 0;
-        config.data.currentBFO = currentBand.varData.lastBFO;
+        currentBand.lastBFO = 0;
+        config.data.currentBFO = currentBand.lastBFO;
         rtv::CWShift = false;
     }
-    currentBand.varData.currMod = demodModIndex;  // Átállítjuk a demodulációs módot
+    currentBand.currMod = demodModIndex; // Átállítjuk a demodulációs módot
 
     // 3. Sávszélesség index beállítása a configban a MENTETT érték alapján ---
     uint8_t savedBwIndex = bandwidthIndex;
@@ -484,32 +458,30 @@ void Band::tuneMemoryStation(uint16_t frequency, int16_t bfoOffset, uint8_t band
         config.data.bwIdxFM = savedBwIndex;
     } else if (savedMod == AM) {
         config.data.bwIdxAM = savedBwIndex;
-    } else {  // LSB, USB, CW
+    } else { // LSB, USB, CW
         config.data.bwIdxSSB = savedBwIndex;
     }
 
     // 4. Újra beállítjuk a sávot az új móddal (false -> ne a preferált adatokat töltse be)
-    this->bandSet(false);
-
-    // 5. Explicit módon állítsd be a frekvenciát és a módot a chipen
-    currentBand.varData.currFreq = frequency;
-    si4735.setFrequency(currentBand.varData.currFreq);
+    this->bandSet(false); // 5. Explicit módon állítsd be a frekvenciát és a módot a chipen
+    currentBand.currFreq = frequency;
+    si4735.setFrequency(currentBand.currFreq);
 
     // BFO eltolás visszaállítása SSB/CW esetén ---
     if (demodModIndex == LSB || demodModIndex == USB || demodModIndex == CW) {
-        currentBand.varData.lastBFO = bfoOffset;  // Mentett BFO visszaállítása a sáv változóba
-        config.data.currentBFO = bfoOffset;       // Mentett BFO visszaállítása az aktuális hangolási változóba
-        rtv::freqDec = bfoOffset;                 // Rotary változó szinkronizálása
+        currentBand.lastBFO = bfoOffset;    // Mentett BFO visszaállítása a sáv változóba
+        config.data.currentBFO = bfoOffset; // Mentett BFO visszaállítása az aktuális hangolási változóba
+        rtv::freqDec = bfoOffset;           // Rotary változó szinkronizálása
 
         const int16_t cwBaseOffset = (demodModIndex == CW) ? config.data.cwReceiverOffsetHz : 0;
         // A visszaállított BFO (+ az AKTUÁLIS manuális finomítás) használata
         int16_t bfoToSet = cwBaseOffset + config.data.currentBFO + config.data.currentBFOmanu;
         si4735.setSSBBfo(bfoToSet);
-        rtv::CWShift = (demodModIndex == CW);  // CW shift állapot frissítése
+        rtv::CWShift = (demodModIndex == CW); // CW shift állapot frissítése
 
     } else {
         // AM/FM esetén biztosítjuk, hogy a BFO nullázva legyen
-        currentBand.varData.lastBFO = 0;
+        currentBand.lastBFO = 0;
         config.data.currentBFO = 0;
         rtv::freqDec = 0;
         rtv::CWShift = false;
