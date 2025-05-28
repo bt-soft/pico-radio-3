@@ -86,7 +86,11 @@ class MainScreen : public Screen {
         updateFrequencyDisplay();
     }
 
-    void toggleMute() { onMuteClicked(); }
+    void toggleMute() {
+        rtv::mute = !rtv::mute;
+        digitalWrite(PIN_AUDIO_MUTE, rtv::mute ? HIGH : LOW);
+        updateMuteButton();
+    }
 
     virtual ~MainScreen() = default;
 
@@ -101,11 +105,6 @@ class MainScreen : public Screen {
         labelColors.background = TFT_TRANSPARENT;
         labelColors.foreground = TFT_CYAN;
 
-        ColorScheme buttonColors = ColorScheme::defaultScheme();
-        buttonColors.background = TFT_DARKGREEN;
-        buttonColors.foreground = TFT_WHITE;
-        buttonColors.pressedBackground = TFT_GREEN;
-
         // Panelek létrehozása
         topPanel = std::make_shared<Panel>(tft, Rect(0, 0, tft.width(), TOP_PANEL_HEIGHT), panelColors);
         bottomPanel = std::make_shared<Panel>(tft, Rect(0, tft.height() - BOTTOM_PANEL_HEIGHT, tft.width(), BOTTOM_PANEL_HEIGHT), panelColors);
@@ -118,15 +117,23 @@ class MainScreen : public Screen {
         // Állomás címke
         stationLabel = std::make_shared<Label>(tft, Rect(MARGIN, 45, 200, 25), "Radio Station", labelColors);
         stationLabel->setTextSize(2);
-        stationLabel->setTextDatum(TL_DATUM); // Némítás gomb (koordináták a bottomPanel-hez képest relatívak)
+        stationLabel->setTextDatum(TL_DATUM);
+
+        // Új gombstílus - MUTE gomb (toggleable)
         Rect muteButtonRect(MARGIN, MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT);
         DEBUG("Creating MUTE button at: (%d,%d) size: %dx%d (relative to bottomPanel)\n", muteButtonRect.x, muteButtonRect.y, muteButtonRect.width, muteButtonRect.height);
-        muteButton = std::make_shared<Button>(tft, muteButtonRect, "MUTE", buttonColors);
-        muteButton->setClickCallback([this]() { onMuteClicked(); }); // Menü gomb (koordináták a bottomPanel-hez képest relatívak)
+
+        muteButton = std::make_shared<Button>(tft, 1, muteButtonRect, "MUTE", Button::ButtonType::Toggleable);
+        muteButton->setCornerRadius(8); // Lekerekített sarkok
+        muteButton->setEventCallback([this](const Button::ButtonEvent &event) { onMuteButtonEvent(event); });
+
+        // Új gombstílus - MENU gomb (pushable)
         Rect menuButtonRect(tft.width() - BUTTON_WIDTH - MARGIN, MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT);
         DEBUG("Creating MENU button at: (%d,%d) size: %dx%d (relative to bottomPanel)\n", menuButtonRect.x, menuButtonRect.y, menuButtonRect.width, menuButtonRect.height);
-        menuButton = std::make_shared<Button>(tft, menuButtonRect, "MENU", buttonColors);
-        menuButton->setClickCallback([this]() { onMenuClicked(); });
+
+        menuButton = std::make_shared<Button>(tft, 2, menuButtonRect, "MENU", Button::ButtonType::Pushable);
+        menuButton->setCornerRadius(8); // Lekerekített sarkok
+        menuButton->setEventCallback([this](const Button::ButtonEvent &event) { onMenuButtonEvent(event); });
 
         // Komponensek hozzáadása a panelekhez
         topPanel->addChild(frequencyLabel);
@@ -228,34 +235,69 @@ class MainScreen : public Screen {
     }
 
     void updateStationDisplay() { stationLabel->setText(currentStation.isEmpty() ? "No Station" : currentStation); }
-
     void updateMuteButton() {
         if (rtv::mute) {
             muteButton->setText("UNMUTE");
-            ColorScheme redColors = ColorScheme::defaultScheme();
-            redColors.background = TFT_RED;
-            redColors.foreground = TFT_WHITE;
-            redColors.pressedBackground = TFT_RED;
-            muteButton->setColorScheme(redColors);
+            muteButton->setButtonState(Button::ButtonState::On);
         } else {
             muteButton->setText("MUTE");
-            ColorScheme greenColors = ColorScheme::defaultScheme();
-            greenColors.background = TFT_DARKGREEN;
-            greenColors.foreground = TFT_WHITE;
-            greenColors.pressedBackground = TFT_GREEN;
-            muteButton->setColorScheme(greenColors);
+            muteButton->setButtonState(Button::ButtonState::Off);
         }
     }
+
+    // Új event handler metódusok az új gombokhoz
+    void onMuteButtonEvent(const Button::ButtonEvent &event) {
+        DEBUG("MUTE button event! ID: %d, State: %d, Text: %s\n", event.id, (int)event.state, event.label.c_str());
+
+        switch (event.state) {
+        case Button::ButtonState::On:
+        case Button::ButtonState::Off:
+            // Toggle mute állapot
+            rtv::mute = (event.state == Button::ButtonState::On);
+            digitalWrite(PIN_AUDIO_MUTE, rtv::mute ? HIGH : LOW);
+            updateMuteButton();
+            DEBUG("MUTE toggled! New state: %s\n", rtv::mute ? "MUTED" : "UNMUTED");
+            break;
+
+        case Button::ButtonState::LongPressed:
+            DEBUG("MUTE button long pressed!\n");
+            // Hosszú nyomásra speciális funkció (pl. audio reset)
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    void onMenuButtonEvent(const Button::ButtonEvent &event) {
+        DEBUG("MENU button event! ID: %d, State: %d, Text: %s\n", event.id, (int)event.state, event.label.c_str());
+
+        switch (event.state) {
+        case Button::ButtonState::Pressed:
+            DEBUG("MENU button pressed! Switching to MenuScreen\n");
+            if (screenManager) {
+                screenManager->switchToScreen("MenuScreen");
+            } else {
+                DEBUG("ERROR: screenManager is null!\n");
+            }
+            break;
+
+        case Button::ButtonState::LongPressed:
+            DEBUG("MENU button long pressed! Opening settings...\n");
+            // Hosszú nyomásra direkt beállítások képernyő
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    // Backward compatibility - régi callback metódusok
     void onMuteClicked() {
-        DEBUG("MUTE button clicked! Current mute state: %s\n", rtv::mute ? "true" : "false");
-        // Mute állapot váltása
+        DEBUG("DEPRECATED: onMuteClicked() called\n");
         rtv::mute = !rtv::mute;
-
-        // Itt lehetne a hardver mute pin kezelése is
         digitalWrite(PIN_AUDIO_MUTE, rtv::mute ? HIGH : LOW);
-
         updateMuteButton();
-        DEBUG("MUTE button clicked! New mute state: %s\n", rtv::mute ? "true" : "false");
     }
     void onMenuClicked() {
         DEBUG("MENU button clicked! Switching to MenuScreen\n");
