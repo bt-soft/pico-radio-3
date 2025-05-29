@@ -203,23 +203,25 @@ class UIDialogBase : public UIScreen {
 
         ColorScheme labelColors = ColorScheme::defaultScheme();
         labelColors.background = TFT_TRANSPARENT;
-        labelColors.foreground = TFT_WHITE; // Create main dialog panel at calculated absolute position
+        labelColors.foreground = TFT_WHITE;
+
+        // Create main dialog panel at calculated absolute position
         dialogPanel = std::make_shared<Panel>(tft, Rect(dialogX, dialogY, dialogW, dialogH), dialogColors);
         dialogPanel->setDrawBackground(true);
 
-        uint16_t currentY = 0;
+        uint16_t currentY = 0; // Now relative to dialog panel
 
         // Create header panel (if title exists)
         if (title.length() > 0) {
-            headerPanel = std::make_shared<Panel>(tft, Rect(1, currentY + 1, dialogW - 2, UI_DLG_HEADER_H), headerColors);
+            headerPanel = std::make_shared<Panel>(tft, Rect(0, currentY, dialogW, UI_DLG_HEADER_H), headerColors);
             headerPanel->setDrawBackground(true);
 
-            // Title label - positioned within header
+            // Title label - positioned within header (relative to header)
             titleLabel = std::make_shared<Label>(tft, Rect(8, 6, dialogW - 50, 18), title, labelColors);
             titleLabel->setTextSize(1);
             titleLabel->setTextDatum(ML_DATUM);
 
-            // Close button in header
+            // Close button coordinates (absolute screen coordinates for manual drawing)
             closeButtonX = dialogX + dialogW - UI_DLG_CLOSE_BTN_SIZE - 5;
             closeButtonY = dialogY + 5;
 
@@ -231,10 +233,12 @@ class UIDialogBase : public UIScreen {
         // Content area - calculate proper height
         uint16_t buttonAreaHeight = UI_DLG_BTN_H + UI_DLG_BUTTON_Y_GAP + 10;
         uint16_t contentHeight = dialogH - currentY - buttonAreaHeight;
-        contentPanel = std::make_shared<Panel>(tft, Rect(1, currentY, dialogW - 2, contentHeight), contentColors);
-        contentPanel->setDrawBackground(true); // Message label (if message exists) - properly positioned in content area
+        contentPanel = std::make_shared<Panel>(tft, Rect(0, currentY, dialogW, contentHeight), contentColors);
+        contentPanel->setDrawBackground(true);
+
+        // Message label (if message exists) - properly positioned in content area
         if (message.length() > 0) {
-            messageLabel = std::make_shared<Label>(tft, Rect(10, 10, dialogW - 24, contentHeight - 20), message, labelColors);
+            messageLabel = std::make_shared<Label>(tft, Rect(10, 10, dialogW - 20, contentHeight - 20), message, labelColors);
             messageLabel->setTextSize(1);
             messageLabel->setTextDatum(TL_DATUM);
             contentPanel->addChild(messageLabel);
@@ -242,17 +246,19 @@ class UIDialogBase : public UIScreen {
 
         dialogPanel->addChild(contentPanel);
 
-        // Button panel - positioned at bottom of dialog
+        // Button panel - positioned at bottom of dialog (relative to dialog panel)
         uint16_t buttonPanelY = dialogH - buttonAreaHeight;
-        buttonPanel = std::make_shared<Panel>(tft, Rect(1, buttonPanelY, dialogW - 2, buttonAreaHeight), contentColors);
+        buttonPanel = std::make_shared<Panel>(tft, Rect(0, buttonPanelY, dialogW, buttonAreaHeight), contentColors);
         buttonPanel->setDrawBackground(false); // Transparent background
         dialogPanel->addChild(buttonPanel);
 
         // Add main dialog panel to screen
         addChild(dialogPanel);
-    } /**
-       * Draw overlay with dotted pattern (similar to DialogBase)
-       */
+    }
+
+    /**
+     * Draw overlay with dotted pattern (similar to DialogBase)
+     */
     virtual void drawOverlay() {
         // Draw semi-transparent overlay using dotted pattern
         uint16_t color = UI_DLG_OVERLAY_COLOR;
@@ -284,7 +290,7 @@ class UIDialogBase : public UIScreen {
         buttonColors.pressedBackground = TFT_BLUE;
         buttonColors.border = TFT_LIGHTGREY;
 
-        // Calculate button position for horizontal layout
+        // Calculate button position for horizontal layout (relative to button panel)
         int buttonWidth = 80;
         int totalButtons = buttonCount + 1;
         int totalGaps = totalButtons > 1 ? totalButtons - 1 : 0;
@@ -292,8 +298,11 @@ class UIDialogBase : public UIScreen {
         int startX = (dialogW - totalWidth) / 2;
         int buttonX = startX + buttonCount * (buttonWidth + UI_DLG_BTN_GAP);
 
-        // Create button positioned in button panel (relative coordinates)
-        auto button = std::make_shared<UIButton>(tft, id, Rect(buttonX, 8, buttonWidth, UI_DLG_BTN_H), text, UIButton::ButtonType::Pushable, buttonColors);
+        // Position button within button panel with proper vertical centering
+        int buttonY = (UI_DLG_BTN_H + UI_DLG_BUTTON_Y_GAP + 10 - UI_DLG_BTN_H) / 2;
+
+        // Create button positioned in button panel (relative coordinates to button panel)
+        auto button = std::make_shared<UIButton>(tft, id, Rect(buttonX, buttonY, buttonWidth, UI_DLG_BTN_H), text, UIButton::ButtonType::Pushable, buttonColors);
 
         button->setEventCallback([this, id, text, callback](const UIButton::ButtonEvent &event) {
             DEBUG("Dialog button pressed: id=%d, text=%s, state=%d\n", id, text.c_str(), (int)event.state);
