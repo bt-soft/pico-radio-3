@@ -1,8 +1,10 @@
 #ifndef __MENU_SCREEN_H
 #define __MENU_SCREEN_H
 
+#include "ui/IUIDialogParent.h"
 #include "ui/ScreenManager.h"
 #include "ui/UIButton.h"
+#include "ui/UIDialogScreen.h"
 
 // Menü elemek típusai
 enum class MenuItemType {
@@ -27,7 +29,7 @@ struct MenuItem {
     MenuItem(const String &text, MenuItemType type, std::function<void()> action = nullptr) : text(text), type(type), action(action) {}
 };
 
-class MenuScreen : public UIScreen {
+class MenuScreen : public UIScreen, public IUIDialogParent {
 
   private:
     std::vector<MenuItem> menuItems;
@@ -42,12 +44,40 @@ class MenuScreen : public UIScreen {
     static const uint16_t TITLE_HEIGHT = 40;
     static const uint16_t MARGIN = 5;
 
+    // Dialog system support
+    UIDialogManager *dialogManager = nullptr;
+
   public:
     MenuScreen(TFT_eSPI &tft, const String &title = "Menu") : UIScreen(tft, "MenuScreen") {
         createComponents(title);
         setupDefaultMenu();
     }
     virtual ~MenuScreen() = default;
+
+    // Set dialog manager (should be called after screen creation)
+    void setDialogManager(UIDialogManager *dm) { dialogManager = dm; }
+
+    // IUIDialogParent implementation
+    virtual void setDialogResponse(const UIDialogResponse &response) override {
+        DEBUG("MenuScreen received dialog response: accepted=%d, buttonIndex=%d, value=%s\n", response.accepted, response.buttonIndex, response.value.c_str());
+
+        // Handle dialog responses here
+        if (response.dialogType == UIDialogType::Confirm) {
+            if (response.accepted) {
+                DEBUG("User confirmed the action\n");
+                // Perform the confirmed action
+            } else {
+                DEBUG("User cancelled the action\n");
+            }
+        } else if (response.dialogType == UIDialogType::Message) {
+            DEBUG("Message dialog acknowledged\n");
+        } else if (response.dialogType == UIDialogType::MultiChoice) {
+            if (response.accepted && response.buttonIndex >= 0) {
+                DEBUG("User selected option %d: %s\n", response.buttonIndex, response.value.c_str());
+                // Handle the selected choice
+            }
+        }
+    }
 
     // Rotary encoder eseménykezelés felülírása
     virtual bool handleRotary(const RotaryEvent &event) override {
@@ -385,19 +415,30 @@ class MenuScreen : public UIScreen {
                 break;
             }
         }
-    }
-
-    // Menü műveletek
+    } // Menü műveletek
     void onBandSwitch() {
-        // FM/AM váltás
-        // Itt implementálandó a si4735 sáv váltás logika
-        // Példa: si4735.setAM() vagy si4735.setFM()
+        // Show confirmation dialog for band switch
+        if (dialogManager) {
+            dialogManager->showConfirmDialog("Band Switch", "Switch between FM and AM bands?", this);
+        } else {
+            DEBUG("Dialog manager not available, performing direct band switch\n");
+            // FM/AM váltás
+            // Itt implementálandó a si4735 sáv váltás logika
+            // Példa: si4735.setAM() vagy si4735.setFM()
+        }
     }
 
     void onSeekStation() {
-        // Automatikus állomás keresés
-        // Itt implementálandó a si4735 seek funkció
-        // Példa: si4735.seekStationProgress()
+        // Show multi-choice dialog for seek direction
+        if (dialogManager) {
+            std::vector<String> choices = {"Seek Up", "Seek Down", "Auto Scan"};
+            dialogManager->showMultiChoiceDialog("Station Search", choices, "Choose search direction:", this);
+        } else {
+            DEBUG("Dialog manager not available, performing direct seek\n");
+            // Automatikus állomás keresés
+            // Itt implementálandó a si4735 seek funkció
+            // Példa: si4735.seekStationProgress()
+        }
     }
 
     void onStationList() {
@@ -419,8 +460,14 @@ class MenuScreen : public UIScreen {
     }
 
     void onConfiguration() {
-        // Konfiguráció képernyő
-        // screenManagerRef->switchToScreen("ConfigScreen");
+        // Show information dialog about configuration
+        if (dialogManager) {
+            dialogManager->showMessageDialog("Configuration", "Configuration settings are not yet implemented. This feature will be available in a future update.", this);
+        } else {
+            DEBUG("Dialog manager not available\n");
+            // Konfiguráció képernyő
+            // screenManagerRef->switchToScreen("ConfigScreen");
+        }
     }
     void onInformation() {
         // Információ képernyőre váltás

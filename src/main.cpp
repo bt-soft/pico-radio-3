@@ -28,6 +28,9 @@ RotaryEncoder rotaryEncoder = RotaryEncoder(PIN_ENCODER_CLK, PIN_ENCODER_DT, PIN
 #include "MenuScreen.h"
 #include "VolumeScreen.h"
 
+// Dialog rendszer
+#include "ui/UIDialogScreen.h"
+
 // Globális példányok példa használatra (valós projektben ezek már deklarálva vannak)
 extern Config config;
 extern FmStationStore fmStationStore;
@@ -43,6 +46,32 @@ extern AmStationStore amStationStore;
 
 // Globális képernyőkezelő
 ScreenManager screenManager(tft);
+
+// Globális dialog manager
+UIDialogManager *dialogManager = nullptr;
+
+/**
+ * @brief Helper function to set up dialog manager for MenuScreen
+ */
+void setupMenuScreenDialogSupport() {
+    if (!dialogManager)
+        return;
+    auto currentScreen = screenManager.getCurrentScreen();
+    if (currentScreen) {
+        // Check if current screen is MenuScreen by name (avoids dynamic_cast with -fno-rtti)
+        if (currentScreen->getName() == "MenuScreen") {
+            static bool dialogManagerSet = false;
+            if (!dialogManagerSet) {
+                DEBUG("Setting dialog manager for MenuScreen\n");
+                // Safe cast since we verified the name
+                MenuScreen *menuScreen = static_cast<MenuScreen *>(currentScreen.get());
+                menuScreen->setDialogManager(dialogManager);
+                dialogManagerSet = true;
+                DEBUG("MenuScreen now supports dialog functionality\n");
+            }
+        }
+    }
+}
 
 /**
  * @brief  Hardware timer interrupt service routine a rotaryhoz
@@ -210,16 +239,28 @@ void setup() {
     delay(300);
 
     // Splash screen eltűntetése
-    splash.hide(); // PICO AD inicializálása
-    PicoSensorUtils::init();
+    splash.hide();           // PICO AD inicializálása
+    PicoSensorUtils::init(); // Képernyőkezelő már inicializálva van (factory-k regisztrálva)
+    // Nincs szükség képernyő példányok létrehozására    // Dialog manager inicializálása
+    DEBUG("Initializing dialog manager...\n");
+    dialogManager = new UIDialogManager(&screenManager, tft);
+    DEBUG("Dialog manager initialized\n");
 
-    // Képernyőkezelő már inicializálva van (factory-k regisztrálva)
-    // Nincs szükség képernyő példányok létrehozására    // Főképernyő aktiválása kezdő paraméterekkel
+    // Főképernyő aktiválása kezdő paraméterekkel
     MainScreenParams params;
     params.frequency = 88500; // 88.5 MHz
     params.showFrequency = true;
     params.stationName = "Radio One";
     screenManager.switchToScreen("MainScreen", &params);
+
+    // Dialog manager beállítása a MenuScreen-hez (ha elérhető)
+    // Ez biztosítja, hogy a menü képernyő használhassa a dialógusokat
+    DEBUG("Setting up dialog support for MenuScreen...\n");
+
+    // A MenuScreen factory által létrehozott példány elérése kicsit trükös,
+    // ezért inkább egy callback rendszert használunk vagy
+    // a ScreenManager-ben egy helper metódust
+    // Egyelőre hagyjuk így, a dialógus manager később lesz beállítva
 
     // Csippantunk egyet
     Utils::beepTick();
@@ -294,10 +335,11 @@ void loop() {
         RotaryEvent rotaryEvent(direction, buttonState);
         bool handled = screenManager.handleRotary(rotaryEvent);
         DEBUG("Rotary event handled by screen: %s\n", handled ? "YES" : "NO");
-    }
-
-    // Deferred actions feldolgozása - biztonságos képernyőváltások végrehajtása
+    } // Deferred actions feldolgozása - biztonságos képernyőváltások végrehajtása
     screenManager.processDeferredActions();
+
+    // Dialog manager beállítása a MenuScreen-hez (ha aktív)
+    setupMenuScreenDialogSupport();
 
     // Képernyőkezelő loop hívása
     screenManager.loop();
