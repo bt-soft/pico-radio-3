@@ -9,7 +9,7 @@ void ScreenManager::registerDefaultScreenFactories() {
     registerScreenFactory("MainScreen", [](TFT_eSPI &tft) -> std::shared_ptr<UIScreen> { return std::make_shared<MainScreen>(tft); });
 
     // MenuScreen factory
-    registerScreenFactory("MenuScreen", [](TFT_eSPI &tft) -> std::shared_ptr<UIScreen> { return std::make_shared<MenuScreen>(tft, "Main Menu"); });
+    registerScreenFactory("MenuScreen", [](TFT_eSPI &tft) -> std::shared_ptr<UIScreen> { return std::make_shared<MenuScreen>(tft, "Main Menu sanyi"); });
 
     // InfoScreen factory
     registerScreenFactory("InfoScreen", [](TFT_eSPI &tft) -> std::shared_ptr<UIScreen> { return std::make_shared<InfoScreen>(tft); });
