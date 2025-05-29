@@ -1,11 +1,10 @@
 #ifndef __VOLUME_SCREEN_H
 #define __VOLUME_SCREEN_H
 
-#include "ScreenManager.h"
-#include "UIButton.h"
-#include "UIComponents.h"
+#include "ui/ScreenManager.h"
+#include "ui/UIButton.h"
 
-class VolumeScreen : public Screen {
+class VolumeScreen : public UIScreen {
   private:
     std::shared_ptr<Panel> titlePanel;
     std::shared_ptr<Panel> contentPanel;
@@ -30,7 +29,7 @@ class VolumeScreen : public Screen {
     static const uint16_t BUTTON_WIDTH = 80;
 
   public:
-    VolumeScreen(TFT_eSPI &tft) : Screen(tft, "VolumeScreen") { createComponents(); }
+    VolumeScreen(TFT_eSPI &tft) : UIScreen(tft, "VolumeScreen") { createComponents(); }
 
     virtual ~VolumeScreen() = default;
 
@@ -60,7 +59,7 @@ class VolumeScreen : public Screen {
         }
 
         // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
-        return Screen::handleRotary(event);
+        return UIScreen::handleRotary(event);
     }
 
     // Volume értékek getter/setter
@@ -235,8 +234,8 @@ class VolumeScreen : public Screen {
     }
     void onBack() {
         DEBUG("Volume screen back pressed, switching to MenuScreen\n");
-        if (screenManager) {
-            screenManager->switchToScreen("MenuScreen");
+        if (iScreenManager) {
+            iScreenManager->switchToScreen("MenuScreen");
         }
     }
 

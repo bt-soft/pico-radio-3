@@ -26,8 +26,6 @@ RotaryEncoder rotaryEncoder = RotaryEncoder(PIN_ENCODER_CLK, PIN_ENCODER_DT, PIN
 #include "InfoScreen.h"
 #include "MainScreen.h"
 #include "MenuScreen.h"
-#include "ScreenManager.h"
-#include "UIComponents.h"
 #include "VolumeScreen.h"
 
 // Globális példányok példa használatra (valós projektben ezek már deklarálva vannak)

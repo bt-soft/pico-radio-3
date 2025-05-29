@@ -2,10 +2,9 @@
 #define __MAIN_SCREEN_H
 
 #include "Config.h"
-#include "ScreenManager.h"
-#include "UIButton.h"
-#include "UIComponents.h"
 #include "rtVars.h"
+#include "ui/ScreenManager.h"
+#include "ui/UIButton.h"
 
 // Példa paraméter struktúra a képernyők közötti adatátadáshoz
 struct MainScreenParams {
@@ -14,7 +13,7 @@ struct MainScreenParams {
     String stationName;
 };
 
-class MainScreen : public Screen {
+class MainScreen : public UIScreen {
   private:
     // UI komponensek
     std::shared_ptr<Label> frequencyLabel;
@@ -35,7 +34,7 @@ class MainScreen : public Screen {
     static const uint16_t MARGIN = 10;
 
   public:
-    MainScreen(TFT_eSPI &tft) : Screen(tft, "MainScreen") {
+    MainScreen(TFT_eSPI &tft) : UIScreen(tft, "MainScreen") {
         createComponents();
         layoutComponents();
     }
@@ -60,7 +59,7 @@ class MainScreen : public Screen {
         }
 
         // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
-        return Screen::handleRotary(event);
+        return UIScreen::handleRotary(event);
     }
 
     // Rotary encoder támogatás
@@ -156,6 +155,7 @@ class MainScreen : public Screen {
         muteButton->setBounds(Rect(MARGIN, tft.height() - BOTTOM_PANEL_HEIGHT + MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT));
         menuButton->setBounds(Rect(tft.width() - BUTTON_WIDTH - MARGIN, tft.height() - BOTTOM_PANEL_HEIGHT + MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT));
     }
+
     virtual void onActivate() override {
         // Képernyő aktiválásakor
         DEBUG("MainScreen activated\n");
@@ -182,6 +182,7 @@ class MainScreen : public Screen {
         // Saját loop logika
         updateRuntimeData();
     }
+
     virtual void drawSelf() override {
         if (needsRedraw) {
             // Teljes képernyő törlése
@@ -276,8 +277,8 @@ class MainScreen : public Screen {
         switch (event.state) {
         case UIButton::ButtonState::Pressed:
             DEBUG("MENU button pressed! Switching to MenuScreen\n");
-            if (screenManager) {
-                screenManager->switchToScreen("MenuScreen");
+            if (iScreenManager) {
+                iScreenManager->switchToScreen("MenuScreen");
             } else {
                 DEBUG("ERROR: screenManager is null!\n");
             }
@@ -300,11 +301,12 @@ class MainScreen : public Screen {
         digitalWrite(PIN_AUDIO_MUTE, rtv::mute ? HIGH : LOW);
         updateMuteButton();
     }
+
     void onMenuClicked() {
         DEBUG("MENU button clicked! Switching to MenuScreen\n");
         // Menü képernyőre váltás
-        if (screenManager) {
-            screenManager->switchToScreen("MenuScreen");
+        if (iScreenManager) {
+            iScreenManager->switchToScreen("MenuScreen");
         } else {
             DEBUG("ERROR: screenManager is null!\n");
         }

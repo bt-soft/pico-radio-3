@@ -1,9 +1,8 @@
 #ifndef __MENU_SCREEN_H
 #define __MENU_SCREEN_H
 
-#include "ScreenManager.h"
-#include "UIButton.h"
-#include "UIComponents.h"
+#include "ui/ScreenManager.h"
+#include "ui/UIButton.h"
 
 // Menü elemek típusai
 enum class MenuItemType {
@@ -28,7 +27,8 @@ struct MenuItem {
     MenuItem(const String &text, MenuItemType type, std::function<void()> action = nullptr) : text(text), type(type), action(action) {}
 };
 
-class MenuScreen : public Screen {
+class MenuScreen : public UIScreen {
+
   private:
     std::vector<MenuItem> menuItems;
     std::shared_ptr<Panel> titlePanel;
@@ -43,7 +43,7 @@ class MenuScreen : public Screen {
     static const uint16_t MARGIN = 5;
 
   public:
-    MenuScreen(TFT_eSPI &tft, const String &title = "Menu") : Screen(tft, "MenuScreen") {
+    MenuScreen(TFT_eSPI &tft, const String &title = "Menu") : UIScreen(tft, "MenuScreen") {
         createComponents(title);
         setupDefaultMenu();
     }
@@ -69,8 +69,10 @@ class MenuScreen : public Screen {
         }
 
         // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
-        return Screen::handleRotary(event);
-    } // Rotary encoder támogatás
+        return UIScreen::handleRotary(event);
+    }
+
+    // Rotary encoder támogatás
     void navigateUp() {
         if (selectedIndex > 0) {
             int oldIndex = selectedIndex;
@@ -145,6 +147,7 @@ class MenuScreen : public Screen {
         addMenuItem(MenuItem("Information", MenuItemType::ACTION, [this]() { onInformation(); }));
         addMenuItem(MenuItem("Back", MenuItemType::BACK, [this]() { onBack(); }));
     }
+
     void updateMenuButtons() {
         // Töröljük a régi gombokat
         for (auto &button : menuButtons) {
@@ -168,7 +171,9 @@ class MenuScreen : public Screen {
             menuButtons.push_back(button);
             menuPanel->addChild(button);
         }
-    } // Optimalizált kiválasztás frissítés - csak a változott gombokat rajzolja újra
+    }
+
+    // Optimalizált kiválasztás frissítés - csak a változott gombokat rajzolja újra
     void updateSelectionColors(int oldIndex, int newIndex) {
         // Scroll kezelése
         updateScrollIfNeeded(newIndex);
@@ -371,8 +376,8 @@ class MenuScreen : public Screen {
                 }
                 break;
             case MenuItemType::SUBMENU:
-                if (screenManager && !item.subMenuName.isEmpty()) {
-                    screenManager->switchToScreen(item.subMenuName);
+                if (iScreenManager && !item.subMenuName.isEmpty()) {
+                    iScreenManager->switchToScreen(item.subMenuName);
                 }
                 break;
 
@@ -380,7 +385,9 @@ class MenuScreen : public Screen {
                 break;
             }
         }
-    } // Menü műveletek
+    }
+
+    // Menü műveletek
     void onBandSwitch() {
         // FM/AM váltás
         // Itt implementálandó a si4735 sáv váltás logika
@@ -406,8 +413,8 @@ class MenuScreen : public Screen {
     void onVolumeSettings() {
         // Hangerő beállítások képernyőre váltás
         DEBUG("MenuScreen: Switching to VolumeScreen\n");
-        if (screenManager) {
-            screenManager->switchToScreen("VolumeScreen");
+        if (iScreenManager) {
+            iScreenManager->switchToScreen("VolumeScreen");
         }
     }
 
@@ -417,14 +424,14 @@ class MenuScreen : public Screen {
     }
     void onInformation() {
         // Információ képernyőre váltás
-        if (screenManager) {
-            screenManager->switchToScreen("InfoScreen");
+        if (iScreenManager) {
+            iScreenManager->switchToScreen("InfoScreen");
         }
     }
     void onBack() {
         DEBUG("MenuScreen: Back pressed, switching to MainScreen\n");
-        if (screenManager) {
-            screenManager->switchToScreen("MainScreen");
+        if (iScreenManager) {
+            iScreenManager->switchToScreen("MainScreen");
         }
     }
 };

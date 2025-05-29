@@ -1,11 +1,12 @@
 #ifndef __INFO_SCREEN_H
 #define __INFO_SCREEN_H
 
-#include "ScreenManager.h"
-#include "UIButton.h"
-#include "defines.h"
+#include "ui/ScreenManager.h"
 
-class InfoScreen : public Screen {
+#include "defines.h"
+#include "ui/UIButton.h"
+
+class InfoScreen : public UIScreen {
   private:
     std::shared_ptr<Panel> titlePanel;
     std::shared_ptr<Panel> contentPanel;
@@ -24,7 +25,7 @@ class InfoScreen : public Screen {
     static const uint16_t LINE_HEIGHT = 25;
 
   public:
-    InfoScreen(TFT_eSPI &tft) : Screen(tft, "InfoScreen") { createComponents(); }
+    InfoScreen(TFT_eSPI &tft) : UIScreen(tft, "InfoScreen") { createComponents(); }
 
     virtual ~InfoScreen() = default;
 
@@ -34,14 +35,14 @@ class InfoScreen : public Screen {
 
         // Vissza gombra kattintással vagy dupla kattintással
         if (event.buttonState == RotaryEvent::ButtonState::Clicked || event.buttonState == RotaryEvent::ButtonState::DoubleClicked) {
-            if (screenManager) {
-                screenManager->goBack();
+            if (iScreenManager) {
+                iScreenManager->goBack();
             }
             return true;
         }
 
         // Ha nem kezeltük, továbbítjuk a szülő implementációnak (gyerekkomponenseknek)
-        return Screen::handleRotary(event);
+        return UIScreen::handleRotary(event);
     }
 
   protected:
@@ -148,9 +149,10 @@ class InfoScreen : public Screen {
 
         memoryLabel->setText(memText);
     }
+
     void onBackClicked() {
-        if (screenManager) {
-            screenManager->goBack();
+        if (iScreenManager) {
+            iScreenManager->goBack();
         }
     }
 };
