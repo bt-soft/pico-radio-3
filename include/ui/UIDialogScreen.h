@@ -22,26 +22,55 @@ class UIDialogScreen : public UIScreen, public IUIDialogParent {
             // Replace dialog's parent with this screen
             dialog->setParent(this);
 
-            // Add dialog as child component
-            addChild(dialog);
+            // Set screen manager reference for dialog
+            dialog->setScreenManager(nullptr); // Will be set by ScreenManager when screen is activated
         }
     }
 
     virtual ~UIDialogScreen() = default;
 
+    // Override onActivate to properly set up dialog
+    virtual void onActivate() override {
+        UIScreen::onActivate();
+        responseReceived = false;
+
+        if (dialog && iScreenManager) {
+            dialog->setScreenManager(iScreenManager);
+        }
+    }
+
+    // Override draw to let dialog handle its own rendering
+    virtual void draw() override {
+        if (dialog) {
+            dialog->draw();
+        }
+    }
+
+    // Override touch/rotary handling to forward to dialog
+    virtual bool handleTouch(const TouchEvent &event) override {
+        if (dialog) {
+            return dialog->handleTouch(event);
+        }
+        return false;
+    }
+
+    virtual bool handleRotary(const RotaryEvent &event) override {
+        if (dialog) {
+            return dialog->handleRotary(event);
+        }
+        return false;
+    }
+
     // IUIDialogParent implementation
     virtual void setDialogResponse(const UIDialogResponse &response) override {
+        DEBUG("UIDialogScreen received response: accepted=%d, buttonId=%d, value=%s\n", response.accepted, response.buttonId, response.value.c_str());
+
         lastResponse = response;
         responseReceived = true;
 
         // Forward to original parent if exists
         if (originalParent) {
             originalParent->setDialogResponse(response);
-        }
-
-        // Auto-close dialog screen
-        if (iScreenManager) {
-            iScreenManager->goBack();
         }
     }
 
@@ -51,12 +80,6 @@ class UIDialogScreen : public UIScreen, public IUIDialogParent {
 
     // Reset response state
     void resetResponse() { responseReceived = false; }
-
-  protected:
-    virtual void onActivate() override {
-        UIScreen::onActivate();
-        responseReceived = false;
-    }
 };
 
 /**

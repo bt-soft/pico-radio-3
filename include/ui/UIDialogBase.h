@@ -95,37 +95,50 @@ class UIDialogBase : public UIScreen {
         if (pParent) {
             pParent->setDialogResponse(response);
         }
-    }
-
-    /**
-     * Close dialog with specified button response
-     */
+    } /**
+       * Close dialog with specified button response
+       */
     virtual void closeDialog(uint8_t buttonId = UI_DLG_CLOSE_BUTTON_ID, const String &label = UI_DLG_CLOSE_BUTTON_LABEL,
                              UIButton::ButtonState state = UIButton::ButtonState::Pressed) {
-        setDialogResponse(UIDialogResponse(buttonId, label, state));
+        DEBUG("Closing dialog with buttonId=%d, label=%s\n", buttonId, label.c_str());
+
+        // Create response for close/cancel
+        UIDialogResponse response;
+        response.accepted = false; // Close/cancel is always false
+        response.buttonIndex = buttonId;
+        response.value = label;
+        response.dialogType = UIDialogType::Confirm;
+
+        setDialogResponse(response);
 
         // Close dialog by switching back to previous screen
         if (iScreenManager) {
+            DEBUG("Going back to previous screen\n");
             iScreenManager->goBack();
+        } else {
+            DEBUG("ERROR: No ScreenManager available!\n");
         }
-    }
-
-    // Override touch handling to implement close button
+    } // Override touch handling to implement close button and modal behavior
     virtual bool handleTouch(const TouchEvent &event) override {
-        // First let the UI components handle the touch
-        if (UIScreen::handleTouch(event)) {
-            return true;
-        }
+        DEBUG("UIDialogBase handleTouch: x=%d, y=%d, pressed=%d\n", event.x, event.y, event.pressed);
 
         // Handle close button manually (for the X in header)
-        if (event.pressed) {
+        if (event.pressed && title.length() > 0) {
             if (event.x >= closeButtonX && event.x <= closeButtonX + UI_DLG_CLOSE_BTN_SIZE && event.y >= closeButtonY && event.y <= closeButtonY + UI_DLG_CLOSE_BTN_SIZE) {
+                DEBUG("Close button clicked\n");
                 closeDialog();
                 return true;
             }
         }
 
-        return false;
+        // Check if touch is within dialog bounds - if not, ignore (modal behavior)
+        if (event.x < dialogX || event.x > dialogX + dialogW || event.y < dialogY || event.y > dialogY + dialogH) {
+            DEBUG("Touch outside dialog bounds - ignoring\n");
+            return true; // Consume event to maintain modal behavior
+        }
+
+        // Let the UI components handle the touch if it's within dialog
+        return UIScreen::handleTouch(event);
     }
 
     // Override rotary handling - by default ESC/back closes dialog
@@ -140,20 +153,42 @@ class UIDialogBase : public UIScreen {
             closeDialog();
             return true;
         }
-
         return false;
     }
 
-  protected:
     /**
-     * Create dialog UI components
+     * Override draw to ensure proper overlay rendering
      */
-    virtual void createDialogComponents() {
-        // Color schemes
-        ColorScheme overlayColors = ColorScheme::defaultScheme();
-        overlayColors.background = UI_DLG_OVERLAY_COLOR;
-        overlayColors.border = TFT_TRANSPARENT;
+    virtual void draw() override {
+        // First draw overlay background
+        drawOverlay();
 
+        // Then draw close button manually in header (if title exists)
+        if (title.length() > 0) {
+            // Draw close button
+            tft.fillRect(closeButtonX, closeButtonY, UI_DLG_CLOSE_BTN_SIZE, UI_DLG_CLOSE_BTN_SIZE, TFT_RED);
+            tft.drawRect(closeButtonX, closeButtonY, UI_DLG_CLOSE_BTN_SIZE, UI_DLG_CLOSE_BTN_SIZE, TFT_WHITE);
+
+            // Draw X
+            tft.setTextColor(TFT_WHITE);
+            tft.setTextSize(1);
+            tft.setTextDatum(MC_DATUM);
+            tft.drawString("X", closeButtonX + UI_DLG_CLOSE_BTN_SIZE / 2, closeButtonY + UI_DLG_CLOSE_BTN_SIZE / 2);
+        }
+
+        // Finally draw all UI components
+        UIScreen::draw();
+    }
+
+  protected: /**
+              * Create dialog UI components
+              */
+    virtual void createDialogComponents() {
+        // Clear screen first and draw overlay
+        tft.fillScreen(TFT_BLACK);
+        drawOverlay();
+
+        // Color schemes
         ColorScheme dialogColors = ColorScheme::defaultScheme();
         dialogColors.background = UI_DLG_BACKGROUND_COLOR;
         dialogColors.border = TFT_WHITE;
@@ -161,36 +196,26 @@ class UIDialogBase : public UIScreen {
         ColorScheme headerColors = ColorScheme::defaultScheme();
         headerColors.background = TFT_NAVY;
         headerColors.foreground = TFT_WHITE;
-        headerColors.border = TFT_BLUE;
 
         ColorScheme contentColors = ColorScheme::defaultScheme();
-        contentColors.background = TFT_TRANSPARENT;
-        contentColors.border = TFT_TRANSPARENT;
+        contentColors.background = UI_DLG_BACKGROUND_COLOR;
+        contentColors.foreground = TFT_WHITE;
 
         ColorScheme labelColors = ColorScheme::defaultScheme();
         labelColors.background = TFT_TRANSPARENT;
-        labelColors.foreground = TFT_WHITE;
-
-        ColorScheme closeButtonColors = ColorScheme::defaultScheme();
-        closeButtonColors.background = TFT_TRANSPARENT;
-        closeButtonColors.foreground = TFT_WHITE;
-        closeButtonColors.pressedBackground = TFT_RED;
-
-        // Create overlay panel (full screen with semi-transparent background)
-        overlayPanel = std::make_shared<Panel>(tft, Rect(0, 0, tft.width(), tft.height()), overlayColors);
-        overlayPanel->setDrawBackground(true);
-
-        // Create dialog panel
+        labelColors.foreground = TFT_WHITE; // Create main dialog panel at calculated absolute position
         dialogPanel = std::make_shared<Panel>(tft, Rect(dialogX, dialogY, dialogW, dialogH), dialogColors);
         dialogPanel->setDrawBackground(true);
 
+        uint16_t currentY = 0;
+
         // Create header panel (if title exists)
         if (title.length() > 0) {
-            headerPanel = std::make_shared<Panel>(tft, Rect(0, 0, dialogW, UI_DLG_HEADER_H), headerColors);
+            headerPanel = std::make_shared<Panel>(tft, Rect(1, currentY + 1, dialogW - 2, UI_DLG_HEADER_H), headerColors);
             headerPanel->setDrawBackground(true);
 
-            // Title label
-            titleLabel = std::make_shared<Label>(tft, Rect(10, 5, dialogW - 40, UI_DLG_HEADER_H - 10), title, labelColors);
+            // Title label - positioned within header
+            titleLabel = std::make_shared<Label>(tft, Rect(8, 6, dialogW - 50, 18), title, labelColors);
             titleLabel->setTextSize(1);
             titleLabel->setTextDatum(ML_DATUM);
 
@@ -198,71 +223,47 @@ class UIDialogBase : public UIScreen {
             closeButtonX = dialogX + dialogW - UI_DLG_CLOSE_BTN_SIZE - 5;
             closeButtonY = dialogY + 5;
 
-            closeButton = std::make_shared<UIButton>(tft, UI_DLG_CLOSE_BUTTON_ID, Rect(dialogW - UI_DLG_CLOSE_BTN_SIZE - 5, 5, UI_DLG_CLOSE_BTN_SIZE, UI_DLG_CLOSE_BTN_SIZE),
-                                                     UI_DLG_CLOSE_BUTTON_LABEL, UIButton::ButtonType::Pushable, closeButtonColors);
-            closeButton->setEventCallback([this](const UIButton::ButtonEvent &event) {
-                if (event.state == UIButton::ButtonState::Pressed) {
-                    closeDialog();
-                }
-            });
-
             headerPanel->addChild(titleLabel);
-            headerPanel->addChild(closeButton);
             dialogPanel->addChild(headerPanel);
+            currentY += UI_DLG_HEADER_H;
         }
 
-        // Create content panel
-        uint16_t contentStartY = title.length() > 0 ? UI_DLG_HEADER_H : 0;
-        uint16_t contentHeight = dialogH - contentStartY - UI_DLG_BTN_H - UI_DLG_BUTTON_Y_GAP;
-
-        contentPanel = std::make_shared<Panel>(tft, Rect(0, contentStartY, dialogW, contentHeight), contentColors);
-
-        // Message label (if message exists)
+        // Content area - calculate proper height
+        uint16_t buttonAreaHeight = UI_DLG_BTN_H + UI_DLG_BUTTON_Y_GAP + 10;
+        uint16_t contentHeight = dialogH - currentY - buttonAreaHeight;
+        contentPanel = std::make_shared<Panel>(tft, Rect(1, currentY, dialogW - 2, contentHeight), contentColors);
+        contentPanel->setDrawBackground(true); // Message label (if message exists) - properly positioned in content area
         if (message.length() > 0) {
-            messageLabel = std::make_shared<Label>(tft, Rect(10, 10, dialogW - 20, 20), message, labelColors);
+            messageLabel = std::make_shared<Label>(tft, Rect(10, 10, dialogW - 24, contentHeight - 20), message, labelColors);
             messageLabel->setTextSize(1);
-            messageLabel->setTextDatum(ML_DATUM);
+            messageLabel->setTextDatum(TL_DATUM);
             contentPanel->addChild(messageLabel);
         }
 
-        // Button panel
-        buttonPanel = std::make_shared<Panel>(tft, Rect(0, dialogH - UI_DLG_BTN_H - UI_DLG_BUTTON_Y_GAP, dialogW, UI_DLG_BTN_H + UI_DLG_BUTTON_Y_GAP), contentColors);
-
         dialogPanel->addChild(contentPanel);
+
+        // Button panel - positioned at bottom of dialog
+        uint16_t buttonPanelY = dialogH - buttonAreaHeight;
+        buttonPanel = std::make_shared<Panel>(tft, Rect(1, buttonPanelY, dialogW - 2, buttonAreaHeight), contentColors);
+        buttonPanel->setDrawBackground(false); // Transparent background
         dialogPanel->addChild(buttonPanel);
 
-        // Add panels to screen
-        addChild(overlayPanel);
-        overlayPanel->addChild(dialogPanel);
-    }
-
-    /**
-     * Draw overlay with dotted pattern (similar to DialogBase)
-     */
+        // Add main dialog panel to screen
+        addChild(dialogPanel);
+    } /**
+       * Draw overlay with dotted pattern (similar to DialogBase)
+       */
     virtual void drawOverlay() {
         // Draw semi-transparent overlay using dotted pattern
         uint16_t color = UI_DLG_OVERLAY_COLOR;
-        for (uint32_t y = 0; y < tft.height(); y += 2) {
-            for (uint32_t x = 0; x < tft.width(); x += 2) {
+        for (uint32_t y = 0; y < tft.height(); y += 3) {
+            for (uint32_t x = 0; x < tft.width(); x += 3) {
                 tft.drawPixel(x, y, color);
             }
         }
-    }
-
-    /**
-     * Override draw to ensure proper overlay rendering
-     */
-    virtual void drawSelf() override {
-        if (needsRedraw) {
-            // Draw overlay first
-            drawOverlay();
-            needsRedraw = false;
-        }
-    }
-
-    /**
-     * Get content panel for derived classes to add custom content
-     */
+    } /**
+       * Get content panel for derived classes to add custom content
+       */
     std::shared_ptr<Panel> getContentPanel() { return contentPanel; }
 
     /**
@@ -280,35 +281,48 @@ class UIDialogBase : public UIScreen {
         ColorScheme buttonColors = ColorScheme::defaultScheme();
         buttonColors.background = TFT_DARKGREY;
         buttonColors.foreground = TFT_WHITE;
-        buttonColors.pressedBackground = TFT_BLUE; // Calculate button position (simple horizontal layout)
-        int currentButtonCount = buttonCount;
+        buttonColors.pressedBackground = TFT_BLUE;
+        buttonColors.border = TFT_LIGHTGREY;
+
+        // Calculate button position for horizontal layout
         int buttonWidth = 80;
-        int startX = (dialogW - buttonWidth) / 2; // Center single button
+        int totalButtons = buttonCount + 1;
+        int totalGaps = totalButtons > 1 ? totalButtons - 1 : 0;
+        int totalWidth = totalButtons * buttonWidth + totalGaps * UI_DLG_BTN_GAP;
+        int startX = (dialogW - totalWidth) / 2;
+        int buttonX = startX + buttonCount * (buttonWidth + UI_DLG_BTN_GAP);
 
-        if (currentButtonCount > 0) {
-            // Multiple buttons - adjust layout
-            int totalWidth = (currentButtonCount + 1) * buttonWidth + currentButtonCount * UI_DLG_BTN_GAP;
-            startX = (dialogW - totalWidth) / 2;
-            startX += currentButtonCount * (buttonWidth + UI_DLG_BTN_GAP);
-        }
-
-        auto button = std::make_shared<UIButton>(tft, id, Rect(startX, 5, buttonWidth, UI_DLG_BTN_H), text, UIButton::ButtonType::Pushable, buttonColors);
+        // Create button positioned in button panel (relative coordinates)
+        auto button = std::make_shared<UIButton>(tft, id, Rect(buttonX, 8, buttonWidth, UI_DLG_BTN_H), text, UIButton::ButtonType::Pushable, buttonColors);
 
         button->setEventCallback([this, id, text, callback](const UIButton::ButtonEvent &event) {
+            DEBUG("Dialog button pressed: id=%d, text=%s, state=%d\n", id, text.c_str(), (int)event.state);
+
             if (event.state == UIButton::ButtonState::Pressed) {
                 if (callback) {
                     callback();
                 }
-                setDialogResponse(UIDialogResponse(id, text, event.state));
 
-                // Auto-close dialog unless it's a special button
-                if (id != UI_DLG_CLOSE_BUTTON_ID) {
-                    closeDialog(id, text, event.state);
+                // Create response
+                UIDialogResponse response;
+                response.accepted = (id == UI_DLG_OK_BUTTON_ID);
+                response.buttonIndex = id;
+                response.value = text;
+                response.dialogType = UIDialogType::Confirm; // Default type
+
+                // Notify parent
+                setDialogResponse(response);
+
+                // Close dialog - let the ScreenManager handle it
+                if (iScreenManager) {
+                    DEBUG("Closing dialog by going back to previous screen\n");
+                    iScreenManager->goBack();
                 }
             }
         });
+
         buttonPanel->addChild(button);
-        buttonCount++; // Increment button counter
+        buttonCount++;
     }
 };
 
