@@ -18,8 +18,8 @@ class MainScreen : public Screen {
     // UI komponensek
     std::shared_ptr<Label> frequencyLabel;
     std::shared_ptr<Label> stationLabel;
-    std::shared_ptr<Button> muteButton;
-    std::shared_ptr<Button> menuButton;
+    std::shared_ptr<UIButton> muteButton;
+    std::shared_ptr<UIButton> menuButton;
     std::shared_ptr<Panel> topPanel;
     std::shared_ptr<Panel> bottomPanel;
 
@@ -123,17 +123,17 @@ class MainScreen : public Screen {
         Rect muteButtonRect(MARGIN, MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT);
         DEBUG("Creating MUTE button at: (%d,%d) size: %dx%d (relative to bottomPanel)\n", muteButtonRect.x, muteButtonRect.y, muteButtonRect.width, muteButtonRect.height);
 
-        muteButton = std::make_shared<Button>(tft, 1, muteButtonRect, "MUTE", Button::ButtonType::Toggleable);
+        muteButton = std::make_shared<UIButton>(tft, 1, muteButtonRect, "MUTE", UIButton::ButtonType::Toggleable);
         muteButton->setCornerRadius(8); // Lekerekített sarkok
-        muteButton->setEventCallback([this](const Button::ButtonEvent &event) { onMuteButtonEvent(event); });
+        muteButton->setEventCallback([this](const UIButton::ButtonEvent &event) { onMuteButtonEvent(event); });
 
         // Új gombstílus - MENU gomb (pushable)
         Rect menuButtonRect(tft.width() - BUTTON_WIDTH - MARGIN, MARGIN, BUTTON_WIDTH, BUTTON_HEIGHT);
         DEBUG("Creating MENU button at: (%d,%d) size: %dx%d (relative to bottomPanel)\n", menuButtonRect.x, menuButtonRect.y, menuButtonRect.width, menuButtonRect.height);
 
-        menuButton = std::make_shared<Button>(tft, 2, menuButtonRect, "MENU", Button::ButtonType::Pushable);
+        menuButton = std::make_shared<UIButton>(tft, 2, menuButtonRect, "MENU", UIButton::ButtonType::Pushable);
         menuButton->setCornerRadius(8); // Lekerekített sarkok
-        menuButton->setEventCallback([this](const Button::ButtonEvent &event) { onMenuButtonEvent(event); });
+        menuButton->setEventCallback([this](const UIButton::ButtonEvent &event) { onMenuButtonEvent(event); });
 
         // Komponensek hozzáadása a panelekhez
         topPanel->addChild(frequencyLabel);
@@ -238,28 +238,28 @@ class MainScreen : public Screen {
     void updateMuteButton() {
         if (rtv::mute) {
             muteButton->setText("UNMUTE");
-            muteButton->setButtonState(Button::ButtonState::On);
+            muteButton->setButtonState(UIButton::ButtonState::On);
         } else {
             muteButton->setText("MUTE");
-            muteButton->setButtonState(Button::ButtonState::Off);
+            muteButton->setButtonState(UIButton::ButtonState::Off);
         }
     }
 
     // Új event handler metódusok az új gombokhoz
-    void onMuteButtonEvent(const Button::ButtonEvent &event) {
+    void onMuteButtonEvent(const UIButton::ButtonEvent &event) {
         DEBUG("MUTE button event! ID: %d, State: %d, Text: %s\n", event.id, (int)event.state, event.label.c_str());
 
         switch (event.state) {
-        case Button::ButtonState::On:
-        case Button::ButtonState::Off:
+        case UIButton::ButtonState::On:
+        case UIButton::ButtonState::Off:
             // Toggle mute állapot
-            rtv::mute = (event.state == Button::ButtonState::On);
+            rtv::mute = (event.state == UIButton::ButtonState::On);
             digitalWrite(PIN_AUDIO_MUTE, rtv::mute ? HIGH : LOW);
             updateMuteButton();
             DEBUG("MUTE toggled! New state: %s\n", rtv::mute ? "MUTED" : "UNMUTED");
             break;
 
-        case Button::ButtonState::LongPressed:
+        case UIButton::ButtonState::LongPressed:
             DEBUG("MUTE button long pressed!\n");
             // Hosszú nyomásra speciális funkció (pl. audio reset)
             break;
@@ -269,11 +269,11 @@ class MainScreen : public Screen {
         }
     }
 
-    void onMenuButtonEvent(const Button::ButtonEvent &event) {
+    void onMenuButtonEvent(const UIButton::ButtonEvent &event) {
         DEBUG("MENU button event! ID: %d, State: %d, Text: %s\n", event.id, (int)event.state, event.label.c_str());
 
         switch (event.state) {
-        case Button::ButtonState::Pressed:
+        case UIButton::ButtonState::Pressed:
             DEBUG("MENU button pressed! Switching to MenuScreen\n");
             if (screenManager) {
                 screenManager->switchToScreen("MenuScreen");
@@ -282,7 +282,7 @@ class MainScreen : public Screen {
             }
             break;
 
-        case Button::ButtonState::LongPressed:
+        case UIButton::ButtonState::LongPressed:
             DEBUG("MENU button long pressed! Opening settings...\n");
             // Hosszú nyomásra direkt beállítások képernyő
             break;

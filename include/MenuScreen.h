@@ -33,7 +33,7 @@ class MenuScreen : public Screen {
     std::shared_ptr<Panel> titlePanel;
     std::shared_ptr<Panel> menuPanel;
     std::shared_ptr<Label> titleLabel;
-    std::vector<std::shared_ptr<Button>> menuButtons;
+    std::vector<std::shared_ptr<UIButton>> menuButtons;
     int selectedIndex = 0;
     int scrollOffset = 0;
     static const int VISIBLE_ITEMS = 8;     // Increased to show all menu items including Back
@@ -159,8 +159,8 @@ class MenuScreen : public Screen {
 
             ColorScheme buttonColors = getButtonColors(itemIndex);
 
-            auto button = std::make_shared<Button>(tft, Rect(MARGIN, TITLE_HEIGHT + i * ITEM_HEIGHT + MARGIN, tft.width() - 2 * MARGIN, ITEM_HEIGHT - MARGIN),
-                                                   menuItems[itemIndex].text, buttonColors);
+            auto button = std::make_shared<UIButton>(tft, Rect(MARGIN, TITLE_HEIGHT + i * ITEM_HEIGHT + MARGIN, tft.width() - 2 * MARGIN, ITEM_HEIGHT - MARGIN),
+                                                     menuItems[itemIndex].text, buttonColors);
 
             button->setClickCallback([this, itemIndex]() { onMenuItemClicked(itemIndex); });
 

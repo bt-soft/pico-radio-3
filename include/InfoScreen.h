@@ -16,7 +16,7 @@ class InfoScreen : public Screen {
     std::shared_ptr<Label> authorLabel;
     std::shared_ptr<Label> buildLabel;
     std::shared_ptr<Label> memoryLabel;
-    std::shared_ptr<Button> backButton;
+    std::shared_ptr<UIButton> backButton;
 
     static const uint16_t TITLE_HEIGHT = 40;
     static const uint16_t BUTTON_HEIGHT = 50;
@@ -100,7 +100,7 @@ class InfoScreen : public Screen {
         memoryLabel->setTextSize(1);
 
         // Vissza gomb
-        backButton = std::make_shared<Button>(tft, Rect(MARGIN, tft.height() - BUTTON_HEIGHT + MARGIN, 100, BUTTON_HEIGHT - 2 * MARGIN), "Vissza", buttonColors);
+        backButton = std::make_shared<UIButton>(tft, Rect(MARGIN, tft.height() - BUTTON_HEIGHT + MARGIN, 100, BUTTON_HEIGHT - 2 * MARGIN), "Vissza", buttonColors);
         backButton->setClickCallback([this]() { onBackClicked(); });
 
         // Komponensek összekapcsolása

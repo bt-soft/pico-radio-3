@@ -9,7 +9,7 @@
 class UIComponent;
 
 // Advanced Button Component - Based on TftButton.h features
-class Button : public UIComponent {
+class UIButton : public UIComponent {
   public:
     // Gomb típusok
     enum class ButtonType {
@@ -143,11 +143,11 @@ class Button : public UIComponent {
     }
 
   public:
-    Button(TFT_eSPI &tft, uint8_t id, const Rect &bounds, const String &text, ButtonType type = ButtonType::Pushable, const ColorScheme &colors = ColorScheme::defaultScheme())
+    UIButton(TFT_eSPI &tft, uint8_t id, const Rect &bounds, const String &text, ButtonType type = ButtonType::Pushable, const ColorScheme &colors = ColorScheme::defaultScheme())
         : UIComponent(tft, bounds, colors), buttonId(id), text(text), buttonType(type) {}
 
     // Backward compatibility constructor
-    Button(TFT_eSPI &tft, const Rect &bounds, const String &text, const ColorScheme &colors = ColorScheme::defaultScheme())
+    UIButton(TFT_eSPI &tft, const Rect &bounds, const String &text, const ColorScheme &colors = ColorScheme::defaultScheme())
         : UIComponent(tft, bounds, colors), buttonId(0), text(text), buttonType(ButtonType::Pushable) {}
 
     // Getters & Setters

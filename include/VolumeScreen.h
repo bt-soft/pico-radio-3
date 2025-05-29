@@ -11,10 +11,10 @@ class VolumeScreen : public Screen {
     std::shared_ptr<Label> titleLabel;
     std::shared_ptr<Label> volumeLabel;
     std::shared_ptr<Label> volumeValueLabel;
-    std::shared_ptr<Button> volumeDownButton;
-    std::shared_ptr<Button> volumeUpButton;
-    std::shared_ptr<Button> muteButton;
-    std::shared_ptr<Button> backButton;
+    std::shared_ptr<UIButton> volumeDownButton;
+    std::shared_ptr<UIButton> volumeUpButton;
+    std::shared_ptr<UIButton> muteButton;
+    std::shared_ptr<UIButton> backButton;
 
     // Volume settings
     int currentVolume = 50; // 0-100%
@@ -123,19 +123,19 @@ class VolumeScreen : public Screen {
         volumeValueLabel->setTextDatum(MC_DATUM);
 
         // Volume - gomb
-        volumeDownButton = std::make_shared<Button>(tft, Rect(MARGIN, TITLE_HEIGHT + 90, BUTTON_WIDTH, BUTTON_HEIGHT), "Vol-", buttonColors);
+        volumeDownButton = std::make_shared<UIButton>(tft, Rect(MARGIN, TITLE_HEIGHT + 90, BUTTON_WIDTH, BUTTON_HEIGHT), "Vol-", buttonColors);
         volumeDownButton->setClickCallback([this]() { onVolumeDown(); });
 
         // Volume + gomb
-        volumeUpButton = std::make_shared<Button>(tft, Rect(tft.width() - MARGIN - BUTTON_WIDTH, TITLE_HEIGHT + 90, BUTTON_WIDTH, BUTTON_HEIGHT), "Vol+", buttonColors);
+        volumeUpButton = std::make_shared<UIButton>(tft, Rect(tft.width() - MARGIN - BUTTON_WIDTH, TITLE_HEIGHT + 90, BUTTON_WIDTH, BUTTON_HEIGHT), "Vol+", buttonColors);
         volumeUpButton->setClickCallback([this]() { onVolumeUp(); });
 
         // Mute gomb
-        muteButton = std::make_shared<Button>(tft, Rect((tft.width() - BUTTON_WIDTH) / 2, TITLE_HEIGHT + 90, BUTTON_WIDTH, BUTTON_HEIGHT), "Mute", buttonColors);
+        muteButton = std::make_shared<UIButton>(tft, Rect((tft.width() - BUTTON_WIDTH) / 2, TITLE_HEIGHT + 90, BUTTON_WIDTH, BUTTON_HEIGHT), "Mute", buttonColors);
         muteButton->setClickCallback([this]() { onMuteToggle(); });
 
         // Back gomb
-        backButton = std::make_shared<Button>(tft, Rect((tft.width() - 100) / 2, tft.height() - BUTTON_HEIGHT - MARGIN, 100, BUTTON_HEIGHT), "Back", backButtonColors);
+        backButton = std::make_shared<UIButton>(tft, Rect((tft.width() - 100) / 2, tft.height() - BUTTON_HEIGHT - MARGIN, 100, BUTTON_HEIGHT), "Back", backButtonColors);
         backButton->setClickCallback([this]() { onBack(); });
 
         // Komponensek összekapcsolása
