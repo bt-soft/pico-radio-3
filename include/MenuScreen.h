@@ -2,6 +2,7 @@
 #define __MENU_SCREEN_H
 
 #include "ScreenManager.h"
+#include "UIButton.h"
 #include "UIComponents.h"
 
 // Menü elemek típusai

@@ -3,6 +3,7 @@
 
 #include "Config.h"
 #include "ScreenManager.h"
+#include "UIButton.h"
 #include "UIComponents.h"
 #include "rtVars.h"
 

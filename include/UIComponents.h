@@ -150,9 +150,6 @@ class UIComponent : public Component {
     }
 };
 
-// Include the new Button header after defining base classes
-#include "UIButton.h"
-
 // Label komponens (csak szöveg megjelenítése)
 class Label : public UIComponent {
   private:

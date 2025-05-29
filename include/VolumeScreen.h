@@ -2,6 +2,7 @@
 #define __VOLUME_SCREEN_H
 
 #include "ScreenManager.h"
+#include "UIButton.h"
 #include "UIComponents.h"
 
 class VolumeScreen : public Screen {

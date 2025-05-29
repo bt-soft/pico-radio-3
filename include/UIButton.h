@@ -2,6 +2,7 @@
 #define __UI_BUTTON_H
 
 #include "ScreenManager.h"
+#include "UIComponents.h"
 #include "defines.h"
 #include <functional>
 

@@ -2,7 +2,7 @@
 #define __INFO_SCREEN_H
 
 #include "ScreenManager.h"
-#include "UIComponents.h"
+#include "UIButton.h"
 #include "defines.h"
 
 class InfoScreen : public Screen {
