@@ -5,6 +5,7 @@
 
 #include "PicoMemoryInfo.h"
 #include "PicoSensorUtils.h"
+#include "ScreenManager.h"
 #include "SplashScreen.h"
 #include "defines.h"
 #include "pins.h"
@@ -32,6 +33,11 @@ RotaryEncoder rotaryEncoder = RotaryEncoder(PIN_ENCODER_CLK, PIN_ENCODER_DT, PIN
 extern Config config;
 extern FmStationStore fmStationStore;
 extern AmStationStore amStationStore;
+
+//-------------------- Screens
+// Globális képernyőkezelő
+ScreenManager screenManager(tft);
+#include "FMSceen.h"
 
 /**
  * @brief  Hardware timer interrupt service routine a rotaryhoz
@@ -179,18 +185,19 @@ void setup() {
 
     // Kezdő képernyőtípus beállítása
     splash.updateProgress(5, 6, "Preparing display...");
-
-    // Ide jönnen a kezdőképernyő típus beállítása
+    screenManager.switchToScreen(FMScreen::SCREEN_NAME); // A kezdő képernyő az FM képernyő
     delay(200);
 
     //--------------------------------------------------------------------
 
     // Lépés 6: Finalizálás
     splash.updateProgress(6, 6, "Starting up...");
-    delay(10000); // Rövidebb delay
+    delay(1000); // Rövidebb delay
 
     // Splash screen eltűntetése
     splash.hide();
+
+    //--------------------------------------------------------------------
 
     // Csippantunk egyet
     Utils::beepTick();
@@ -219,8 +226,74 @@ void loop() {
     }
 #endif
 
-    // Rotary Encoder olvasása és kezelése
+    //------------------- Touch esemény kezelése
+    uint16_t touchX, touchY;
+    bool touched = tft.getTouch(&touchX, &touchY);
+    static bool lastTouchState = false;
+    static uint16_t lastTouchX = 0, lastTouchY = 0;
+
+    // Touch press esemény
+    if (touched && !lastTouchState) {
+        DEBUG("Touch PRESS at (%d,%d)\n", touchX, touchY);
+        TouchEvent touchEvent(touchX, touchY, true);
+        bool handled = screenManager.handleTouch(touchEvent);
+        DEBUG("Touch PRESS handled: %s\n", handled ? "YES" : "NO");
+        lastTouchX = touchX;
+        lastTouchY = touchY;
+    }
+    // Touch release esemény
+    else if (!touched && lastTouchState) {
+        DEBUG("Touch RELEASE at (%d,%d)\n", lastTouchX, lastTouchY);
+        TouchEvent touchEvent(lastTouchX, lastTouchY, false);
+        bool handled = screenManager.handleTouch(touchEvent);
+        DEBUG("Touch RELEASE handled: %s\n", handled ? "YES" : "NO");
+    }
+
+    lastTouchState = touched;
+
+    //------------------- Rotary Encoder esemény kezelése
+
+    // Rotary Encoder olvasása
     RotaryEncoder::EncoderState encoderState = rotaryEncoder.read();
+
+    // Rotary encoder eseményeinek továbbítása a ScreenManager-nek
+    if (encoderState.direction != RotaryEncoder::Direction::None || encoderState.buttonState != RotaryEncoder::ButtonState::Open) {
+
+        // RotaryEvent létrehozása a ScreenManager típusaival
+        RotaryEvent::Direction direction = RotaryEvent::Direction::None;
+        if (encoderState.direction == RotaryEncoder::Direction::Up) {
+            direction = RotaryEvent::Direction::Up;
+        } else if (encoderState.direction == RotaryEncoder::Direction::Down) {
+            direction = RotaryEvent::Direction::Down;
+        }
+
+        RotaryEvent::ButtonState buttonState = RotaryEvent::ButtonState::NotPressed;
+        if (encoderState.buttonState == RotaryEncoder::ButtonState::Clicked) {
+            buttonState = RotaryEvent::ButtonState::Clicked;
+        } else if (encoderState.buttonState == RotaryEncoder::ButtonState::DoubleClicked) {
+            buttonState = RotaryEvent::ButtonState::DoubleClicked;
+        }
+
+        // Esemény továbbítása a ScreenManager-nek
+        RotaryEvent rotaryEvent(direction, buttonState);
+        bool handled = screenManager.handleRotary(rotaryEvent);
+        DEBUG("Rotary event handled by screen: %s\n", handled ? "YES" : "NO");
+    }
+
+    // Deferred actions feldolgozása - biztonságos képernyőváltások végrehajtása
+    screenManager.processDeferredActions();
+
+    // Képernyőkezelő loop hívása
+    screenManager.loop();
+
+    // Képernyő rajzolása (csak szükség esetén, korlátozott gyakorisággal)
+    static uint32_t lastDrawTime = 0;
+    const uint32_t DRAW_INTERVAL = 50; // Maximum 20 FPS (50ms között rajzolás)
+
+    if (millis() - lastDrawTime >= DRAW_INTERVAL) {
+        screenManager.draw();
+        lastDrawTime = millis();
+    }
 }
 
 /**
