@@ -26,7 +26,7 @@ class CompositeComponent : public Component {
         if (!isActive)
             return false;
 
-        DEBUG("CompositeComponent handleTouch: (%d,%d) pressed=%s children=%d\n", event.x, event.y, event.pressed ? "true" : "false", children.size());
+        //DEBUG("CompositeComponent handleTouch: (%d,%d) pressed=%s children=%d\n", event.x, event.y, event.pressed ? "true" : "false", children.size());
 
         // Először magunk próbáljuk kezelni
         if (handleOwnTouch(event)) {
@@ -37,7 +37,7 @@ class CompositeComponent : public Component {
         // Ha nem kezeltük, továbbítjuk a gyerekeknek (visszafelé, hogy a felső rétegek elsőbbséget kapjanak)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             if ((*it)->getActive() && (*it)->handleTouch(event)) {
-                DEBUG("CompositeComponent: handled by child\n");
+                //DEBUG("CompositeComponent: handled by child\n");
                 return true; // Egy gyerek feldolgozta
             }
         }
@@ -62,7 +62,7 @@ class CompositeComponent : public Component {
         // Ha nem kezeltük, továbbítjuk a gyerekeknek (visszafelé, hogy a felső rétegek elsőbbséget kapjanak)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             if ((*it)->getActive() && (*it)->handleRotary(event)) {
-                DEBUG("CompositeComponent: rotary handled by child\n");
+                //DEBUG("CompositeComponent: rotary handled by child\n");
                 return true; // Egy gyerek feldolgozta
             }
         }

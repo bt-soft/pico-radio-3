@@ -7,6 +7,10 @@
 class UIButton : public UIComponent {
 
   public:
+    // Alapértelmezett gomb méretek
+    static constexpr uint16_t DEFAULT_BUTTON_WIDTH = 63;
+    static constexpr uint16_t DEFAULT_BUTTON_HEIGHT = 35;
+
     // Gomb típusok
     enum class ButtonType {
         Pushable,  // Egyszerű nyomógomb
@@ -144,11 +148,15 @@ class UIButton : public UIComponent {
 
   public:
     UIButton(TFT_eSPI &tft, uint8_t id, const Rect &bounds, const String &text, ButtonType type = ButtonType::Pushable, const ColorScheme &colors = ColorScheme::defaultScheme())
-        : UIComponent(tft, bounds, colors), buttonId(id), text(text), buttonType(type) {}
+        : UIComponent(tft, Rect(bounds.x, bounds.y, (bounds.width == 0 ? DEFAULT_BUTTON_WIDTH : bounds.width), (bounds.height == 0 ? DEFAULT_BUTTON_HEIGHT : bounds.height)),
+                      colors),
+          buttonId(id), text(text), buttonType(type) {}
 
     // Backward compatibility constructor
     UIButton(TFT_eSPI &tft, const Rect &bounds, const String &text, const ColorScheme &colors = ColorScheme::defaultScheme())
-        : UIComponent(tft, bounds, colors), buttonId(0), text(text), buttonType(ButtonType::Pushable) {}
+        : UIComponent(tft, Rect(bounds.x, bounds.y, (bounds.width == 0 ? DEFAULT_BUTTON_WIDTH : bounds.width), (bounds.height == 0 ? DEFAULT_BUTTON_HEIGHT : bounds.height)),
+                      colors),
+          buttonId(0), text(text), buttonType(ButtonType::Pushable) {}
 
     // Getters & Setters
     uint8_t getId() const { return buttonId; }

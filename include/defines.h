@@ -17,11 +17,11 @@
 #define __DEBUG // Debug mód vezérlése
 
 #ifdef __DEBUG
-#define SHOW_MEMORY_INFO
+// #define SHOW_MEMORY_INFO
 #define MEMORY_INFO_INTERVAL 20 * 1000 // 20mp
 
 // Soros portra várakozás a debug üzenetek előtt
-#define DEBUG_WAIT_FOR_SERIAL
+// #define DEBUG_WAIT_FOR_SERIAL
 
 #endif
 
