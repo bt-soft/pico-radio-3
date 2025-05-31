@@ -236,8 +236,9 @@ void loop() {
     if (touched && !lastTouchState) {
         // DEBUG("Touch PRESS at (%d,%d)\n", touchX, touchY);
         TouchEvent touchEvent(touchX, touchY, true);
-        bool handled = screenManager.handleTouch(touchEvent);
-        // DEBUG("Touch PRESS handled: %s\n", handled ? "YES" : "NO");
+        screenManager.handleTouch(touchEvent);
+        // bool handled = screenManager.handleTouch(touchEvent);
+        //  DEBUG("Touch PRESS handled: %s\n", handled ? "YES" : "NO");
         lastTouchX = touchX;
         lastTouchY = touchY;
     }
@@ -245,8 +246,9 @@ void loop() {
     else if (!touched && lastTouchState) {
         // DEBUG("Touch RELEASE at (%d,%d)\n", lastTouchX, lastTouchY);
         TouchEvent touchEvent(lastTouchX, lastTouchY, false);
-        bool handled = screenManager.handleTouch(touchEvent);
-        // DEBUG("Touch RELEASE handled: %s\n", handled ? "YES" : "NO");
+        screenManager.handleTouch(touchEvent);
+        // bool handled = screenManager.handleTouch(touchEvent);
+        //  DEBUG("Touch RELEASE handled: %s\n", handled ? "YES" : "NO");
     }
 
     lastTouchState = touched;

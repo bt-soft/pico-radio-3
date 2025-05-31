@@ -75,8 +75,8 @@ class FMScreen : public UIScreen {
 
    private:
     void handleButton1Event(const UIButton::ButtonEvent &event) {
-        DEBUG("FMScreen: Button 1 event! ID: %d, Label: '%s', State: %d\n",
-              event.id, event.label.c_str(), (int)event.state);
+        DEBUG("FMScreen: Button 1 event! ID: %d, Label: '%s', State: %s\n",
+              event.id, event.label.c_str(), UIButton::buttonStateToString(event.state));
 
         if (event.state == UIButton::ButtonState::Pressed) {
             // Gomb 1 megnyomva
@@ -91,13 +91,17 @@ class FMScreen : public UIScreen {
     }
 
     void handleButton2Event(const UIButton::ButtonEvent &event) {
-        DEBUG("FMScreen: Button 2 event! ID: %d, Label: '%s', State: %d\n", event.id, event.label.c_str(), (int)event.state);
+        DEBUG("FMScreen: Button 2 event! ID: %d, Label: '%s', State: %s\n",
+              event.id, event.label.c_str(), UIButton::buttonStateToString(event.state));
         if (event.state == UIButton::ButtonState::Pressed) { /* Gomb 2 akció */ }
     }
 
     void handleButton3Event(const UIButton::ButtonEvent &event) {
-        DEBUG("FMScreen: Button 3 event! ID: %d, Label: '%s', State: %d\n", event.id, event.label.c_str(), (int)event.state);
-        if (event.state == UIButton::ButtonState::Pressed) { /* Gomb 3 akció */ }
+        DEBUG("FMScreen: Button 3 event! ID: %d, Label: '%s', State: %s\n",
+              event.id, event.label.c_str(), UIButton::buttonStateToString(event.state));
+        if (event.state == UIButton::ButtonState::Pressed) {
+            tft.drawString("Gomb 3 megnyomva!", tft.width() / 2, tft.height() / 2 + 60);
+        }
     }
 
   private:

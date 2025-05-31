@@ -158,6 +158,28 @@ class UIButton : public UIComponent {
                       colors),
           buttonId(0), text(text), buttonType(ButtonType::Pushable) {}
 
+    // Segédfüggvény a ButtonState szöveges megjelenítéséhez
+    static const char* buttonStateToString(ButtonState state) {
+        switch (state) {
+            case ButtonState::Off: return "Off";
+            case ButtonState::On: return "On";
+            case ButtonState::Disabled: return "Disabled";
+            case ButtonState::CurrentActive: return "CurrentActive";
+            case ButtonState::Pressed: return "Pressed";
+            case ButtonState::LongPressed: return "LongPressed";
+            default: return "Unknown";
+        }
+    }
+
+    // Segédfüggvény a ButtonType szöveges megjelenítéséhez (ha később kellene)
+    // static const char* buttonTypeToString(ButtonType type) {
+    //     switch (type) {
+    //         case ButtonType::Pushable: return "Pushable";
+    //         case ButtonType::Toggleable: return "Toggleable";
+    //         default: return "Unknown";
+    //     }
+    // }
+
     // Getters & Setters
     uint8_t getId() const { return buttonId; }
     void setId(uint8_t id) { buttonId = id; }
